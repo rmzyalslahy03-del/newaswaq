@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- ============================================================ -->
+  <!-- ملف Sitemap لمشروع "مجمع أسواق ريادة المستهلك"                 -->
+  <!-- تاريخ الإنشاء: 2025-01-01                                     -->
+  <!-- ملاحظة: هذا الملف ثابت، يُرجى تحديثه يدوياً عند إضافة فئات    -->
+  <!-- أو متاجر أو منتجات جديدة. يمكنك استخدام أداة توليد sitemap   -->
+  <!-- مجانية مثل https://www.xml-sitemaps.com/ لتوليد ملف محدث.    -->
+  <!-- ============================================================ -->
+
+  <!-- الصفحة الرئيسية -->
+  <url>
+    <loc>https://example.com/</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+
+  <!-- صفحة لوحة التحكم (اختياري، يمكن إخفاؤها من محركات البحث) -->
+  <url>
+    <loc>https://example.com/admin.html</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>never</changefreq>
+    <priority>0.1</priority>
+  </url>
+
+  <!-- ===== الفئات (يجب إضافة كل فئة موجودة فعلياً) ===== -->
+  <!-- مثال:
+  <url>
+    <loc>https://example.com/category/electronics</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://example.com/category/fashion</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  -->
+
+  <!-- ===== المتاجر (يجب إضافة كل متجر موجود) ===== -->
+  <!-- مثال:
+  <url>
+    <loc>https://example.com/store/store-1</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  -->
+
+  <!-- ===== المنتجات (يمكن إضافة أهم المنتجات) ===== -->
+  <!-- مثال:
+  <url>
+    <loc>https://example.com/product/store-1/123</loc>
+    <lastmod>2025-06-28</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.4</priority>
+  </url>
+  -->
+
+</urlset>
