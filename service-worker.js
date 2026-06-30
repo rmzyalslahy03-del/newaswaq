@@ -1,5 +1,5 @@
-// service-worker.js
-const CACHE_NAME = 'markets-v2'; // غيّر الإصدار عند أي تحديث كبير للملفات الثابتة
+// service-worker.js - نسخة محسّنة مع دعم التثبيت الفوري
+const CACHE_NAME = 'markets-v3'; // غيّر الإصدار لتحديث الكاش
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -14,20 +14,23 @@ const STATIC_ASSETS = [
 
 // ============= حدث التثبيت =============
 self.addEventListener('install', event => {
-  console.log('[SW] تثبيت...');
+  console.log('[SW] تثبيت الإصدار:', CACHE_NAME);
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('[SW] تخزين الأصول الثابتة');
         return cache.addAll(STATIC_ASSETS);
       })
-      .then(() => self.skipWaiting()) // تفعيل الـ SW فوراً دون انتظار إغلاق علامات التبويب القديمة
+      .then(() => {
+        console.log('[SW] التثبيت اكتمل، يتم التفعيل الفوري');
+        return self.skipWaiting(); // تفعيل SW فوراً
+      })
   );
 });
 
 // ============= حدث التفعيل =============
 self.addEventListener('activate', event => {
-  console.log('[SW] تفعيل...');
+  console.log('[SW] تفعيل الإصدار:', CACHE_NAME);
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
@@ -37,22 +40,23 @@ self.addEventListener('activate', event => {
             return caches.delete(key);
           })
       );
-    }).then(() => self.clients.claim()) // سيطرة الـ SW على جميع الصفحات المفتوحة
+    }).then(() => {
+      console.log('[SW] أصبح SW مسيطراً على جميع الصفحات');
+      return self.clients.claim();
+    })
   );
 });
 
-// ============= استراتيجية الجلب: Cache First مع تحديث خفي (Stale-While-Revalidate) =============
+// ============= استراتيجية الجلب: Cache First مع تحديث خفي =============
 self.addEventListener('fetch', event => {
-  // لا نتدخل في طلبات Supabase API حتى لا نكسر البيانات الحية
+  // تجاهل طلبات Supabase API
   if (event.request.url.includes('supabase.co')) {
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      // نعيد النسخة المخبأة فوراً إن وُجدت
       const fetchPromise = fetch(event.request).then(networkResponse => {
-        // إذا نجح الطلب، نُحدّث الكاش بنسخة جديدة
         if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => {
@@ -61,13 +65,19 @@ self.addEventListener('fetch', event => {
         }
         return networkResponse;
       }).catch(error => {
-        // في حال فشل الاتصال ولم توجد نسخة مخبأة، نُظهر خطأً (لكن في حالتنا غالباً سيكون هناك كاش)
-        console.warn('[SW] فشل الجلب من الشبكة:', error);
-        return cachedResponse; // نُعيد المخبأ إن وُجد، وإلا undefined
+        console.warn('[SW] فشل الجلب من الشبكة، نعيد المخبأ إن وُجد');
+        return cachedResponse;
       });
 
-      // نُعيد المخبأ فوراً إن وُجد، وإلا ننتظر الشبكة
       return cachedResponse || fetchPromise;
     })
   );
+});
+
+// ============= إشعار نجاح التثبيت (للمطور) =============
+self.addEventListener('message', event => {
+  if (event.data === 'check-install') {
+    // الرد بأن SW يعمل
+    event.ports[0].postMessage({ installed: true, version: CACHE_NAME });
+  }
 });
