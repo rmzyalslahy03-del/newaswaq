@@ -194,7 +194,6 @@ async function fetchFromSupabase() {
             messages: messagesRes.data
         };
 
-        // ضمان القيم الافتراضية
         if (!result.settings.whatsappNumber) {
             result.settings.whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
         }
@@ -211,14 +210,6 @@ async function fetchFromSupabase() {
                 mission: "هنا تكتب رسالة السوق...",
                 vision: "هنا تكتب رؤية السوق..."
             };
-        }
-        if (!result.footer.social || !Array.isArray(result.footer.social) || result.footer.social.length === 0) {
-            result.footer.social = [
-                { icon: "fab fa-facebook-f", url: "#" },
-                { icon: "fab fa-twitter", url: "#" },
-                { icon: "fab fa-instagram", url: "#" },
-                { icon: "fab fa-whatsapp", url: "https://wa.me/" + (result.settings.whatsappNumber || DEFAULT_WHATSAPP_NUMBER) }
-            ];
         }
 
         return result;
@@ -273,7 +264,7 @@ async function pushToSupabase(data) {
     }
 }
 
-// ================== دوال التحديث الجزئي ==================
+// ================== دوال التحديث الجزئي للصور ==================
 function applyPartialUpdates(oldData, newData) {
     if (!oldData || !newData) return;
 
@@ -439,7 +430,7 @@ function translate(key) {
     return key;
 }
 
-// ================== دوال المستخدمين ==================
+// ================== دوال المستخدمين (تسجيل، دخول، إعجابات...) ==================
 function showLoginDialog() {
     const loginHtml = `<div id="loginModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:white; padding:30px; border-radius:40px; width:300px;"><h3 style="margin-bottom:20px;">تسجيل الدخول</h3><input type="text" id="loginUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;"><input type="password" id="loginPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;"><button onclick="window.performLogin()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold;">دخول</button><button onclick="window.showRegisterDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">إنشاء حساب جديد</button><button onclick="document.getElementById('loginModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button></div></div>`;
     document.body.insertAdjacentHTML('beforeend', loginHtml);
@@ -636,9 +627,11 @@ function startHeaderInterval() {
     headerInterval = setInterval(changeHeaderBackground, 5000);
 }
 
-function startCarousel() {}
+function startCarousel() {
+    // ستُستخدم من index.html
+}
 
-// ================== PWA: رسالة تثبيت منبثقة أعلى الشاشة ==================
+// ================== PWA: رسالة تثبيت منبثقة أعلى الشاشة (نسخة مصغرة) ==================
 let deferredPrompt;
 let installToastTimeout;
 
@@ -660,12 +653,6 @@ let installToastTimeout;
     }
 })();
 
-window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault();
-    deferredPrompt = e;
-    showInstallToast();
-});
-
 function showInstallToast() {
     const existing = document.getElementById('installToast');
     if (existing) existing.remove();
@@ -674,10 +661,10 @@ function showInstallToast() {
     const toast = document.createElement('div');
     toast.id = 'installToast';
     toast.innerHTML = `
-        <div style="display:flex; align-items:center; justify-content:space-between; background:#fbbf24; color:#0f172a; padding:12px 20px; border-radius:0 0 20px 20px; box-shadow:0 4px 15px rgba(0,0,0,0.3); font-family:'Cairo',sans-serif; font-weight:600; gap:10px;">
-            <span>📲 تثبيت التطبيق للوصول السريع</span>
-            <button id="installNowBtn" style="background:#0f172a; color:#fbbf24; border:none; padding:8px 16px; border-radius:30px; font-weight:bold; cursor:pointer; white-space:nowrap;">تثبيت</button>
-            <button id="dismissInstallBtn" style="background:transparent; border:none; color:#0f172a; font-size:1.2rem; cursor:pointer; padding:0;">✕</button>
+        <div style="display:flex; align-items:center; justify-content:space-between; background:#fbbf24; color:#0f172a; padding:6px 12px; border-radius:0 0 12px 12px; box-shadow:0 2px 8px rgba(0,0,0,0.2); font-family:'Cairo',sans-serif; font-weight:600; gap:6px; font-size:0.8rem;">
+            <span style="display:flex; align-items:center; gap:4px;"><i class="fas fa-download" style="font-size:0.9rem;"></i> تثبيت التطبيق</span>
+            <button id="installNowBtn" style="background:#0f172a; color:#fbbf24; border:none; padding:3px 10px; border-radius:20px; font-weight:bold; cursor:pointer; font-size:0.7rem;">تثبيت</button>
+            <button id="dismissInstallBtn" style="background:transparent; border:none; color:#0f172a; font-size:0.9rem; cursor:pointer; padding:0 2px;">✕</button>
         </div>
     `;
     toast.style.cssText = `
@@ -686,9 +673,11 @@ function showInstallToast() {
         left: 50%;
         transform: translate(-50%, 0);
         z-index: 9999;
-        max-width: 95%;
+        max-width: 90%;
         width: auto;
-        animation: slideDown 0.3s ease forwards;
+        animation: slideDown 0.25s ease forwards;
+        border-radius: 0 0 12px 12px;
+        overflow: hidden;
     `;
     document.body.appendChild(toast);
 
@@ -715,8 +704,14 @@ function showInstallToast() {
             toast.style.animation = 'fadeOut 0.2s ease forwards';
             setTimeout(() => toast.remove(), 200);
         }
-    }, 6000);
+    }, 5000);
 }
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    showInstallToast();
+});
 
 window.addEventListener('appinstalled', () => {
     const toast = document.getElementById('installToast');
@@ -809,4 +804,4 @@ if ('serviceWorker' in navigator) {
             .then(reg => console.log('SW مسجل'))
             .catch(err => console.warn('فشل تسجيل SW', err));
     });
-                                     }
+                        }
