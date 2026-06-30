@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>جاري التحويل...</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0f172a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-family: 'Cairo', sans-serif;
+            color: #fbbf24;
+            text-align: center;
+            direction: rtl;
+        }
+        .loader-box {
+            background: rgba(255,255,255,0.05);
+            padding: 2rem;
+            border-radius: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 400px;
+            width: 90%;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(251,191,36,0.3);
+            border-top-color: #fbbf24;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #e2e8f0;
+            font-size: 0.9rem;
+        }
+    </style>
+    <script>
+        (function() {
+            // استخراج المعامل `to` من الرابط
+            const params = new URLSearchParams(window.location.search);
+            let target = params.get('to') || '';
+
+            // إذا لم يوجد معامل، نذهب للرئيسية مباشرة
+            if (!target) {
+                window.location.replace('/index.html');
+                return;
+            }
+
+            // إزالة أي علامات # زائدة قد تكون أضيفت خطأ
+            target = target.replace(/^#/, '');
+
+            // الاحتفاظ بمعاملات إضافية للتتبع (مثل utm_source)
+            const utmParams = [];
+            const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+            allowedUtm.forEach(function(key) {
+                if (params.has(key)) {
+                    utmParams.push(key + '=' + encodeURIComponent(params.get(key)));
+                }
+            });
+
+            // بناء الرابط النهائي
+            let finalUrl = '/index.html';
+            if (target) {
+                finalUrl += '#' + target;
+            }
+            if (utmParams.length > 0) {
+                // إذا كانت هناك معاملات UTM، نضيفها كـ query string بعد التجزئة؟ الأفضل وضعها قبل #
+                // لكن بما أن الصفحة SPA وتستخدم hash، نضع المعاملات في الرابط الرئيسي
+                finalUrl = '/index.html?' + utmParams.join('&');
+                if (target) {
+                    finalUrl += '#' + target;
+                }
+            }
+
+            // إعادة التوجيه الفوري (مع استبدال التاريخ)
+            window.location.replace(finalUrl);
+        })();
+    </script>
+</head>
+<body>
+    <div class="loader-box">
+        <div class="spinner"></div>
+        <h2>جاري تحويلك إلى المتجر...</h2>
+        <p>يرجى الانتظار لحظة</p>
+    </div>
+</body>
+</html>
