@@ -134,6 +134,8 @@
                     <label><input type="checkbox" id="orderChatCheckbox"> محادثة المدير</label>
                     <label>البريد الإلكتروني لاستقبال رسائل الاتصال</label>
                     <input type="email" id="contactEmail" placeholder="admin@example.com">
+                    <label>رقم الواتساب (مثال: 967778562099)</label>
+                    <input type="text" id="whatsappNumber" placeholder="رقم الواتساب الدولي">
                     <button id="saveGeneralSettings">حفظ الإعدادات</button>
                 </div>
             </div>
@@ -209,7 +211,7 @@
                     <input type="text" id="headerSubtitleInput" placeholder="النص الفرعي">
                     <label>صور الخلفية (روابط)</label>
                     <textarea id="headerImagesInput" rows="3"></textarea>
-                    <label>رفع صور (سيتم رفعها وحذف القديمة)</label>
+                    <label>رفع صور (سيتم رفعها وإضافتها للقائمة)</label>
                     <input type="file" id="headerImagesFile" accept="image/*" multiple>
                     <button id="saveHeaderBtn">حفظ</button>
                 </div>
@@ -302,6 +304,73 @@
                 <div class="admin-list" id="productsList"></div>
             </div>
 
+            <!-- إعلانات المتاجر (أشرطة الصفوف) -->
+            <div class="admin-card">
+                <h2>إعلانات المتاجر (بين الصفوف)</h2>
+                <div class="admin-form">
+                    <select id="bannerStoreSelect"><option>اختر المتجر</option></select>
+                </div>
+                <div class="admin-form" id="bannerForm">
+                    <input type="hidden" id="editBannerId">
+                    <label>نوع الإعلان</label>
+                    <select id="bannerType">
+                        <option value="text">نص متحرك</option>
+                        <option value="images">صور متحركة (حتى 3)</option>
+                    </select>
+                    <div id="bannerTextGroup">
+                        <label>نص الإعلان</label>
+                        <input type="text" id="bannerContent" placeholder="مثال: 🎉 خصم 50%">
+                    </div>
+                    <div id="bannerImagesGroup" style="display:none;">
+                        <label>الصورة 1</label>
+                        <input type="text" id="bannerImage1" placeholder="رابط الصورة 1">
+                        <input type="file" id="bannerImageFile1" accept="image/*">
+                        <label>الصورة 2</label>
+                        <input type="text" id="bannerImage2" placeholder="رابط الصورة 2">
+                        <input type="file" id="bannerImageFile2" accept="image/*">
+                        <label>الصورة 3</label>
+                        <input type="text" id="bannerImage3" placeholder="رابط الصورة 3">
+                        <input type="file" id="bannerImageFile3" accept="image/*">
+                    </div>
+                    <label>الرابط (اختياري)</label>
+                    <input type="url" id="bannerLink" placeholder="https://example.com">
+                    <label>الترتيب</label>
+                    <input type="number" id="bannerOrder" value="0" min="0">
+                    <label><input type="checkbox" id="bannerActive" checked> نشط</label>
+                    <button id="addBannerBtn">➕ إضافة</button>
+                    <button id="updateBannerBtn" style="display:none;">تحديث</button>
+                </div>
+                <div class="admin-list" id="bannersList"></div>
+            </div>
+
+            <!-- سياسة السوق -->
+            <div class="admin-card">
+                <h2>سياسة السوق</h2>
+                <div class="admin-form">
+                    <label>شروط البيع والشراء</label>
+                    <textarea id="policyTerms" rows="4"></textarea>
+                    <label>سياسة الاسترجاع</label>
+                    <textarea id="policyReturns" rows="4"></textarea>
+                    <label>شروط الاستخدام</label>
+                    <textarea id="policyUsage" rows="4"></textarea>
+                    <button id="saveMarketPolicy">حفظ السياسة</button>
+                </div>
+            </div>
+
+            <!-- من نحن -->
+            <div class="admin-card">
+                <h2>من نحن</h2>
+                <div class="admin-form">
+                    <label>نبذة عن السوق</label>
+                    <textarea id="aboutDescription" rows="4"></textarea>
+                    <label>رسالتنا</label>
+                    <textarea id="aboutMission" rows="4"></textarea>
+                    <label>رؤيتنا</label>
+                    <textarea id="aboutVision" rows="4"></textarea>
+                    <button id="saveAboutUs">حفظ</button>
+                </div>
+            </div>
+
             <!-- التقييمات -->
             <div class="admin-card">
                 <h2>تقييمات العملاء</h2>
@@ -351,6 +420,15 @@
                 <h2>رسائل الاتصال</h2>
                 <div class="admin-list" id="messagesList"></div>
             </div>
+
+            <!-- سجل الأخطاء (للمدير فقط) -->
+            <div class="admin-card">
+                <h2>سجل الأخطاء</h2>
+                <div class="admin-list" id="adminErrorsList" style="max-height:300px; overflow-y:auto;">
+                    <p>لا توجد أخطاء مسجلة.</p>
+                </div>
+                <button id="clearAdminErrors" style="background:#ef4444; color:white; border:none; padding:8px 15px; border-radius:40px; margin-top:10px; cursor:pointer;">مسح السجل</button>
+            </div>
         </div>
     </div>
 
@@ -360,17 +438,16 @@
 
     <script src="common.js"></script>
     <script>
-        // ================== المتغيرات العامة ==================
         let appData = null;
         let currentEditStoreId = null;
         let currentEditProductStoreId = null;
         let currentEditProductId = null;
         let currentEditCarouselId = null;
         let currentEditTestimonialId = null;
+        let currentEditBannerId = null;
         let changedTables = new Set();
         let isSaving = false;
 
-        // ================== دوال مساعدة ==================
         function showSpinner(show) {
             const badge = document.getElementById('autoSaveBadge');
             if (show) {
@@ -404,12 +481,13 @@
             isSaving = true;
             showSpinner(true);
             try {
-                await common.saveAppData(true); // حفظ في IndexedDB ورفع للسحابة
+                await common.saveAppData(true);
                 changedTables.clear();
-                showToast("✅ تم حفظ جميع التغييرات ومزامنتها");
+                showToast("✅ تم حفظ جميع التغييرات ومزامنتها", 'success', true);
             } catch (err) {
                 console.error("خطأ في الحفظ:", err);
-                showToast("❌ خطأ في الحفظ: " + err.message, 'error');
+                showToast("❌ خطأ في الحفظ: " + err.message, 'error', true);
+                common.logAdminError(err, 'saveToSupabaseAdmin');
             } finally {
                 isSaving = false;
                 showSpinner(false);
@@ -425,34 +503,10 @@
             return null;
         }
 
-        // ================== دوال رفع الصور المتقدمة (مع حذف القديم) ==================
-        async function handleImageUploadWithReplace(fileInput, targetInputId, folder, oldImageUrl = null) {
-            const file = fileInput.files[0];
-            if (!file) return;
-            try {
-                // إذا لم يتم تمرير القديم، نحاول جلب القيمة الحالية من الحقل
-                if (!oldImageUrl) {
-                    oldImageUrl = document.getElementById(targetInputId)?.value || null;
-                }
-                const newUrl = await common.uploadAndReplaceImage(file, oldImageUrl, folder);
-                document.getElementById(targetInputId).value = newUrl;
-                showToast('✅ تم رفع الصورة وحذف القديمة');
-                // تغيير العلامة لتحديث البيانات
-                changedTables.add('settings'); // أو الجدول المناسب، لكننا سنستخدم save عام
-                await saveToSupabaseAdmin();
-            } catch (err) {
-                showToast('❌ فشل رفع الصورة: ' + err.message, 'error');
-            }
-            // إعادة تعيين قيمة الملف لتسمح بإعادة الرفع
-            fileInput.value = '';
-        }
-
-        // دوال رفع الصور المخصصة
         function setupImageUpload(fileInputId, targetInputId, folder, getOldUrl = null) {
             document.getElementById(fileInputId).addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                // محاولة الحصول على الرابط القديم من الدالة المخصصة أو من الحقل
                 let oldUrl = null;
                 if (getOldUrl) {
                     oldUrl = getOldUrl();
@@ -462,17 +516,17 @@
                 try {
                     const newUrl = await common.uploadAndReplaceImage(file, oldUrl, folder);
                     document.getElementById(targetInputId).value = newUrl;
-                    showToast('✅ تم رفع الصورة وحذف القديمة');
+                    showToast('✅ تم رفع الصورة وحذف القديمة', 'success', true);
                     changedTables.add('settings');
                     await saveToSupabaseAdmin();
                 } catch (err) {
-                    showToast('❌ فشل رفع الصورة: ' + err.message, 'error');
+                    showToast('❌ فشل رفع الصورة: ' + err.message, 'error', true);
+                    common.logAdminError(err, 'uploadImage');
                 }
                 e.target.value = '';
             });
         }
 
-        // ================== دوال عرض القوائم (Populate) ==================
         function refreshAllLists() {
             if (!appData) return;
             populateCategoriesList();
@@ -490,6 +544,9 @@
             populateTickerSettings();
             populateFooterSettings();
             populateStorePermissions();
+            populateBannerStoreSelect();
+            populatePolicyAndAbout();
+            renderAdminErrors();
         }
 
         function populateCategorySelects() {
@@ -622,7 +679,22 @@
             }
         }
 
-        // ================== دوال تعبئة النماذج ==================
+        function renderAdminErrors() {
+            const container = document.getElementById('adminErrorsList');
+            if (!container) return;
+            const errors = window.adminErrors || [];
+            if (errors.length === 0) {
+                container.innerHTML = '<p>لا توجد أخطاء مسجلة.</p>';
+                return;
+            }
+            container.innerHTML = errors.map(err => 
+                `<div class="admin-item" style="font-size:12px;">
+                    <div><strong>${err.time}</strong> - ${err.context}</div>
+                    <div>${err.message}</div>
+                </div>`
+            ).join('');
+        }
+
         function populateGeneralSettings() {
             if (!appData) return;
             document.getElementById('currencySelect').value = appData.settings.currency;
@@ -634,6 +706,7 @@
             document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods.email;
             document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods.chat;
             document.getElementById('contactEmail').value = appData.settings.contactEmail || '';
+            document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || (window.DEFAULT_WHATSAPP_NUMBER || '967778562099');
             document.getElementById('trustBadgesInput').value = (appData.settings.trustBadges || []).join('\n');
         }
 
@@ -688,7 +761,178 @@
             });
         }
 
-        // ================== دوال CRUD ==================
+        function populatePolicyAndAbout() {
+            if (!appData) return;
+            const policy = appData.settings.marketPolicy || {};
+            document.getElementById('policyTerms').value = policy.terms || '';
+            document.getElementById('policyReturns').value = policy.returns || '';
+            document.getElementById('policyUsage').value = policy.usage || '';
+
+            const about = appData.settings.aboutUs || {};
+            document.getElementById('aboutDescription').value = about.description || '';
+            document.getElementById('aboutMission').value = about.mission || '';
+            document.getElementById('aboutVision').value = about.vision || '';
+        }
+
+        // ============= دوال إعلانات المتاجر (Banners) =============
+        function populateBannerStoreSelect() {
+            const select = document.getElementById('bannerStoreSelect');
+            if (!select) return;
+            select.innerHTML = '<option>اختر المتجر</option>';
+            if (!appData) return;
+            for (const cat in appData.stores) {
+                const stores = appData.stores[cat] || [];
+                stores.forEach(store => {
+                    select.innerHTML += `<option value="${store.id}">${store.name} (${store.category})</option>`;
+                });
+            }
+        }
+
+        function refreshBannerList(storeId) {
+            document.getElementById('bannerStoreSelect').value = storeId;
+            document.getElementById('bannerStoreSelect').dispatchEvent(new Event('change'));
+        }
+
+        document.getElementById('bannerStoreSelect').addEventListener('change', (e) => {
+            const storeId = e.target.value;
+            if (!storeId || storeId === 'اختر المتجر') return;
+            const store = findStoreById(storeId);
+            if (!store) return;
+            const banners = store.banners || [];
+            const container = document.getElementById('bannersList');
+            container.innerHTML = '';
+            banners.forEach(b => {
+                const div = document.createElement('div');
+                div.className = 'admin-item';
+                div.innerHTML = `<span>${b.type === 'text' ? (b.content || 'نص') : (b.images?.length || 0) + ' صورة'} - ترتيب ${b.order}</span>
+                    <div>
+                        <button class="edit" onclick="editBanner('${storeId}', '${b.id}')">تعديل</button>
+                        <button onclick="deleteBanner('${storeId}', '${b.id}')">حذف</button>
+                    </div>`;
+                container.appendChild(div);
+            });
+        });
+
+        function editBanner(storeId, bannerId) {
+            const store = findStoreById(storeId);
+            if (!store) return;
+            const banner = (store.banners || []).find(b => b.id === bannerId);
+            if (!banner) return;
+            currentEditBannerId = bannerId;
+            document.getElementById('editBannerId').value = bannerId;
+            document.getElementById('bannerType').value = banner.type;
+            document.getElementById('bannerContent').value = banner.content || '';
+            document.getElementById('bannerLink').value = banner.link || '';
+            document.getElementById('bannerOrder').value = banner.order || 0;
+            document.getElementById('bannerActive').checked = banner.active;
+            if (banner.type === 'images') {
+                document.getElementById('bannerImagesGroup').style.display = 'block';
+                document.getElementById('bannerTextGroup').style.display = 'none';
+                const images = banner.images || [];
+                document.getElementById('bannerImage1').value = images[0] || '';
+                document.getElementById('bannerImage2').value = images[1] || '';
+                document.getElementById('bannerImage3').value = images[2] || '';
+            } else {
+                document.getElementById('bannerTextGroup').style.display = 'block';
+                document.getElementById('bannerImagesGroup').style.display = 'none';
+            }
+            document.getElementById('addBannerBtn').style.display = 'none';
+            document.getElementById('updateBannerBtn').style.display = 'block';
+        }
+
+        function deleteBanner(storeId, bannerId) {
+            const store = findStoreById(storeId);
+            if (!store) return;
+            store.banners = (store.banners || []).filter(b => b.id !== bannerId);
+            changedTables.add('stores');
+            saveToSupabaseAdmin();
+            refreshBannerList(storeId);
+            showToast('تم حذف الإعلان', 'success', true);
+        }
+
+        async function addBanner() {
+            const storeId = document.getElementById('bannerStoreSelect').value;
+            if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً');
+            const store = findStoreById(storeId);
+            if (!store) return;
+            
+            const type = document.getElementById('bannerType').value;
+            const content = document.getElementById('bannerContent').value;
+            const link = document.getElementById('bannerLink').value;
+            const order = parseInt(document.getElementById('bannerOrder').value) || 0;
+            const active = document.getElementById('bannerActive').checked;
+            
+            let images = [];
+            if (type === 'images') {
+                const img1 = document.getElementById('bannerImage1').value.trim();
+                const img2 = document.getElementById('bannerImage2').value.trim();
+                const img3 = document.getElementById('bannerImage3').value.trim();
+                images = [img1, img2, img3].filter(url => url !== '');
+            }
+            
+            const newBanner = {
+                id: 'banner-' + Date.now(),
+                type,
+                content,
+                images,
+                link,
+                order,
+                active
+            };
+            
+            if (!store.banners) store.banners = [];
+            store.banners.push(newBanner);
+            changedTables.add('stores');
+            await saveToSupabaseAdmin();
+            refreshBannerList(storeId);
+            document.getElementById('bannerForm').reset();
+            document.getElementById('addBannerBtn').style.display = 'block';
+            document.getElementById('updateBannerBtn').style.display = 'none';
+            showToast('تم إضافة الإعلان', 'success', true);
+        }
+
+        async function updateBanner() {
+            const storeId = document.getElementById('bannerStoreSelect').value;
+            const bannerId = document.getElementById('editBannerId').value;
+            const store = findStoreById(storeId);
+            if (!store) return;
+            const banner = (store.banners || []).find(b => b.id === bannerId);
+            if (!banner) return;
+            
+            banner.type = document.getElementById('bannerType').value;
+            banner.content = document.getElementById('bannerContent').value;
+            banner.link = document.getElementById('bannerLink').value;
+            banner.order = parseInt(document.getElementById('bannerOrder').value) || 0;
+            banner.active = document.getElementById('bannerActive').checked;
+            
+            if (banner.type === 'images') {
+                const img1 = document.getElementById('bannerImage1').value.trim();
+                const img2 = document.getElementById('bannerImage2').value.trim();
+                const img3 = document.getElementById('bannerImage3').value.trim();
+                banner.images = [img1, img2, img3].filter(url => url !== '');
+            } else {
+                banner.images = [];
+            }
+            
+            changedTables.add('stores');
+            await saveToSupabaseAdmin();
+            refreshBannerList(storeId);
+            document.getElementById('bannerForm').reset();
+            document.getElementById('addBannerBtn').style.display = 'block';
+            document.getElementById('updateBannerBtn').style.display = 'none';
+            currentEditBannerId = null;
+            showToast('تم تحديث الإعلان', 'success', true);
+        }
+
+        document.getElementById('addBannerBtn').addEventListener('click', addBanner);
+        document.getElementById('updateBannerBtn').addEventListener('click', updateBanner);
+        document.getElementById('bannerType').addEventListener('change', (e) => {
+            const isText = e.target.value === 'text';
+            document.getElementById('bannerTextGroup').style.display = isText ? 'block' : 'none';
+            document.getElementById('bannerImagesGroup').style.display = isText ? 'none' : 'block';
+        });
+
+        // ================== باقي دوال CRUD (فئات، متاجر، منتجات...) ==================
         window.editCategory = function(id) {
             if (!appData) return;
             const cat = appData.categories.find(c => c.id === id);
@@ -722,9 +966,10 @@
                     changedTables.add('products');
                     await saveToSupabaseAdmin();
                     refreshAllLists();
-                    showToast('تم حذف الفئة بنجاح');
+                    showToast('تم حذف الفئة بنجاح', 'success', true);
                 } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error');
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteCategory');
                 }
             }
         };
@@ -756,7 +1001,7 @@
                 changedTables.add('stores');
                 await saveToSupabaseAdmin();
                 refreshAllLists();
-                showToast(store.hidden ? 'تم إخفاء المتجر' : 'تم إظهار المتجر');
+                showToast(store.hidden ? 'تم إخفاء المتجر' : 'تم إظهار المتجر', 'success', true);
             }
         };
 
@@ -778,9 +1023,10 @@
                     changedTables.add('products');
                     await saveToSupabaseAdmin();
                     refreshAllLists();
-                    showToast('تم حذف المتجر');
+                    showToast('تم حذف المتجر', 'success', true);
                 } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error');
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteStore');
                 }
             }
         };
@@ -812,129 +1058,16 @@
                         changedTables.add('products');
                         await saveToSupabaseAdmin();
                         refreshAllLists();
-                        showToast('تم حذف المنتج');
+                        showToast('تم حذف المنتج', 'success', true);
                     }
                 } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error');
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteProduct');
                 }
             }
         };
 
-        window.editCarousel = function(adId) {
-            if (!appData) return;
-            const ad = appData.carousel.find(a => a.id === adId);
-            if (!ad) return;
-            currentEditCarouselId = adId;
-            document.getElementById('carouselName').value = ad.name;
-            document.getElementById('carouselLink').value = ad.link;
-            document.getElementById('carouselImage').value = ad.image;
-            document.getElementById('carouselOrder').value = ad.order;
-            document.getElementById('carouselActive').checked = ad.active;
-            document.getElementById('addCarouselBtn').style.display = 'none';
-            document.getElementById('updateCarouselBtn').style.display = 'block';
-        };
-
-        window.deleteCarousel = async function(adId) {
-            if (!appData) return;
-            if (confirm('هل أنت متأكد من حذف هذا الإعلان؟')) {
-                try {
-                    const { error } = await common.supabaseClient.from('carousel').delete().eq('id', adId);
-                    if (error) throw error;
-                    appData.carousel = appData.carousel.filter(a => a.id !== adId);
-                    changedTables.add('carousel');
-                    await saveToSupabaseAdmin();
-                    refreshAllLists();
-                    showToast('تم حذف الإعلان');
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error');
-                }
-            }
-        };
-
-        window.editTestimonial = function(id) {
-            if (!appData) return;
-            const t = appData.testimonials.find(t => t.id == id);
-            if (!t) return;
-            currentEditTestimonialId = id;
-            document.getElementById('testimonialName').value = t.name;
-            document.getElementById('testimonialImage').value = t.image;
-            document.getElementById('testimonialRating').value = t.rating;
-            document.getElementById('testimonialReview').value = t.review;
-            document.getElementById('addTestimonialBtn').style.display = 'none';
-            document.getElementById('updateTestimonialBtn').style.display = 'block';
-        };
-
-        window.deleteTestimonial = async function(id) {
-            if (!appData) return;
-            if (confirm('هل أنت متأكد من حذف هذا التقييم؟')) {
-                try {
-                    const { error } = await common.supabaseClient.from('testimonials').delete().eq('id', id);
-                    if (error) throw error;
-                    appData.testimonials = appData.testimonials.filter(t => t.id != id);
-                    changedTables.add('testimonials');
-                    await saveToSupabaseAdmin();
-                    refreshAllLists();
-                    showToast('تم حذف التقييم');
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error');
-                }
-            }
-        };
-
-        window.editContest = function(index) {
-            if (!appData) return;
-            const contest = appData.settings.contests[index];
-            if (!contest) return;
-            document.getElementById('editContestId').value = index;
-            document.getElementById('contestName').value = contest.name;
-            document.getElementById('contestDescription').value = contest.description;
-            document.getElementById('contestEndDate').value = contest.endDate;
-            document.getElementById('addContestBtn').style.display = 'none';
-            document.getElementById('updateContestBtn').style.display = 'block';
-        };
-
-        window.deleteContest = async function(index) {
-            if (!appData) return;
-            if (confirm('هل أنت متأكد من حذف هذه المسابقة؟')) {
-                appData.settings.contests.splice(index, 1);
-                changedTables.add('settings');
-                await saveToSupabaseAdmin();
-                refreshAllLists();
-                showToast('تم حذف المسابقة');
-            }
-        };
-
-        window.deleteTrustBadge = async function(index) {
-            if (!appData) return;
-            if (confirm('هل أنت متأكد من حذف هذه الشارة؟')) {
-                appData.settings.trustBadges.splice(index, 1);
-                changedTables.add('settings');
-                await saveToSupabaseAdmin();
-                refreshAllLists();
-                showToast('تم حذف الشارة');
-            }
-        };
-
-        window.deleteMessage = async function(index) {
-            if (!appData) return;
-            if (confirm('هل أنت متأكد من حذف هذه الرسالة؟')) {
-                const msg = appData.messages[index];
-                try {
-                    const { error } = await common.supabaseClient.from('messages').delete().eq('id', msg.id);
-                    if (error) throw error;
-                    appData.messages.splice(index, 1);
-                    changedTables.add('messages');
-                    await saveToSupabaseAdmin();
-                    refreshAllLists();
-                    showToast('تم حذف الرسالة');
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error');
-                }
-            }
-        };
-
-        // ================== أحداث الأزرار (إضافة وتحديث) ==================
-        // الفئات
+        // ================== أحداث الأزرار الأخرى (إضافة وتحديث) ==================
         document.getElementById('addCategoryBtn').addEventListener('click', async () => {
             const name = document.getElementById('categoryName').value;
             if (!name) return alert('اسم الفئة مطلوب');
@@ -967,9 +1100,10 @@
                 document.getElementById('categoryForm').reset();
                 document.getElementById('addCategoryBtn').style.display = 'block';
                 document.getElementById('updateCategoryBtn').style.display = 'none';
-                showToast('تم إضافة الفئة');
+                showToast('تم إضافة الفئة', 'success', true);
             } catch (err) {
-                showToast("خطأ في الإضافة: " + err.message, 'error');
+                showToast("خطأ في الإضافة: " + err.message, 'error', true);
+                common.logAdminError(err, 'addCategory');
             }
         });
 
@@ -1006,13 +1140,13 @@
                 document.getElementById('categoryForm').reset();
                 document.getElementById('addCategoryBtn').style.display = 'block';
                 document.getElementById('updateCategoryBtn').style.display = 'none';
-                showToast('تم تحديث الفئة');
+                showToast('تم تحديث الفئة', 'success', true);
             } catch (err) {
-                showToast("خطأ في التحديث: " + err.message, 'error');
+                showToast("خطأ في التحديث: " + err.message, 'error', true);
+                common.logAdminError(err, 'updateCategory');
             }
         });
 
-        // المتاجر
         document.getElementById('addStoreBtn').addEventListener('click', async () => {
             const category = document.getElementById('storeCategorySelect').value;
             if (!category || category === 'اختر الفئة') return alert('اختر الفئة أولاً');
@@ -1031,6 +1165,7 @@
                 address: document.getElementById('storeAddress').value,
                 ownerCode: '',
                 allowUpload: false,
+                banners: [],
                 productDisplayMode: document.getElementById('storeProductDisplayMode').value,
                 productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value),
                 numStrips: parseInt(document.getElementById('storeNumStrips').value)
@@ -1048,9 +1183,10 @@
                 document.getElementById('storeForm').reset();
                 document.getElementById('addStoreBtn').style.display = 'block';
                 document.getElementById('updateStoreBtn').style.display = 'none';
-                showToast('تم إضافة المتجر');
+                showToast('تم إضافة المتجر', 'success', true);
             } catch (err) {
-                showToast("خطأ في إضافة المتجر: " + err.message, 'error');
+                showToast("خطأ في إضافة المتجر: " + err.message, 'error', true);
+                common.logAdminError(err, 'addStore');
             }
         });
 
@@ -1082,13 +1218,13 @@
                 document.getElementById('addStoreBtn').style.display = 'block';
                 document.getElementById('updateStoreBtn').style.display = 'none';
                 currentEditStoreId = null;
-                showToast('تم تحديث المتجر');
+                showToast('تم تحديث المتجر', 'success', true);
             } catch (err) {
-                showToast("خطأ في التحديث: " + err.message, 'error');
+                showToast("خطأ في التحديث: " + err.message, 'error', true);
+                common.logAdminError(err, 'updateStore');
             }
         });
 
-        // المنتجات
         document.getElementById('addProductBtn').addEventListener('click', async () => {
             const storeId = document.getElementById('productStoreSelect').value;
             if (!storeId || storeId === 'اختر المتجر') return alert('اختر المتجر أولاً');
@@ -1115,9 +1251,10 @@
                 document.getElementById('productForm').reset();
                 document.getElementById('addProductBtn').style.display = 'block';
                 document.getElementById('updateProductBtn').style.display = 'none';
-                showToast('تم إضافة المنتج');
+                showToast('تم إضافة المنتج', 'success', true);
             } catch (err) {
-                showToast("خطأ في إضافة المنتج: " + err.message, 'error');
+                showToast("خطأ في إضافة المنتج: " + err.message, 'error', true);
+                common.logAdminError(err, 'addProduct');
             }
         });
 
@@ -1145,13 +1282,13 @@
                 document.getElementById('updateProductBtn').style.display = 'none';
                 currentEditProductStoreId = null;
                 currentEditProductId = null;
-                showToast('تم تحديث المنتج');
+                showToast('تم تحديث المنتج', 'success', true);
             } catch (err) {
-                showToast("خطأ في التحديث: " + err.message, 'error');
+                showToast("خطأ في التحديث: " + err.message, 'error', true);
+                common.logAdminError(err, 'updateProduct');
             }
         });
 
-        // الإعلانات الدوارة
         document.getElementById('addCarouselBtn').addEventListener('click', async () => {
             const name = document.getElementById('carouselName').value;
             if (!name) return alert('اسم الإعلان مطلوب');
@@ -1174,9 +1311,10 @@
                 document.getElementById('carouselForm').reset();
                 document.getElementById('addCarouselBtn').style.display = 'block';
                 document.getElementById('updateCarouselBtn').style.display = 'none';
-                showToast('تم إضافة الإعلان');
+                showToast('تم إضافة الإعلان', 'success', true);
             } catch (err) {
-                showToast("خطأ في الإضافة: " + err.message, 'error');
+                showToast("خطأ في الإضافة: " + err.message, 'error', true);
+                common.logAdminError(err, 'addCarousel');
             }
         });
 
@@ -1203,13 +1341,13 @@
                 document.getElementById('addCarouselBtn').style.display = 'block';
                 document.getElementById('updateCarouselBtn').style.display = 'none';
                 currentEditCarouselId = null;
-                showToast('تم تحديث الإعلان');
+                showToast('تم تحديث الإعلان', 'success', true);
             } catch (err) {
-                showToast("خطأ في التحديث: " + err.message, 'error');
+                showToast("خطأ في التحديث: " + err.message, 'error', true);
+                common.logAdminError(err, 'updateCarousel');
             }
         });
 
-        // التقييمات
         document.getElementById('addTestimonialBtn').addEventListener('click', async () => {
             const name = document.getElementById('testimonialName').value;
             if (!name) return alert('الاسم مطلوب');
@@ -1231,9 +1369,10 @@
                 document.getElementById('testimonialForm').reset();
                 document.getElementById('addTestimonialBtn').style.display = 'block';
                 document.getElementById('updateTestimonialBtn').style.display = 'none';
-                showToast('تم إضافة التقييم');
+                showToast('تم إضافة التقييم', 'success', true);
             } catch (err) {
-                showToast("خطأ في الإضافة: " + err.message, 'error');
+                showToast("خطأ في الإضافة: " + err.message, 'error', true);
+                common.logAdminError(err, 'addTestimonial');
             }
         });
 
@@ -1259,13 +1398,13 @@
                 document.getElementById('addTestimonialBtn').style.display = 'block';
                 document.getElementById('updateTestimonialBtn').style.display = 'none';
                 currentEditTestimonialId = null;
-                showToast('تم تحديث التقييم');
+                showToast('تم تحديث التقييم', 'success', true);
             } catch (err) {
-                showToast("خطأ في التحديث: " + err.message, 'error');
+                showToast("خطأ في التحديث: " + err.message, 'error', true);
+                common.logAdminError(err, 'updateTestimonial');
             }
         });
 
-        // المسابقات
         document.getElementById('addContestBtn').addEventListener('click', async () => {
             const name = document.getElementById('contestName').value;
             if (!name) return alert('اسم المسابقة مطلوب');
@@ -1282,7 +1421,7 @@
             document.getElementById('contestForm').reset();
             document.getElementById('addContestBtn').style.display = 'block';
             document.getElementById('updateContestBtn').style.display = 'none';
-            showToast('تم إضافة المسابقة');
+            showToast('تم إضافة المسابقة', 'success', true);
         });
 
         document.getElementById('updateContestBtn').addEventListener('click', async () => {
@@ -1299,10 +1438,9 @@
             document.getElementById('contestForm').reset();
             document.getElementById('addContestBtn').style.display = 'block';
             document.getElementById('updateContestBtn').style.display = 'none';
-            showToast('تم تحديث المسابقة');
+            showToast('تم تحديث المسابقة', 'success', true);
         });
 
-        // الإعدادات العامة
         document.getElementById('saveGeneralSettings').addEventListener('click', async () => {
             appData.settings.currency = document.getElementById('currencySelect').value;
             appData.settings.language = document.getElementById('languageSelect').value;
@@ -1315,22 +1453,21 @@
                 chat: document.getElementById('orderChatCheckbox').checked
             };
             appData.settings.contactEmail = document.getElementById('contactEmail').value;
+            appData.settings.whatsappNumber = document.getElementById('whatsappNumber').value.trim();
             changedTables.add('settings');
             await saveToSupabaseAdmin();
-            showToast('تم حفظ الإعدادات العامة');
+            showToast('تم حفظ الإعدادات العامة', 'success', true);
         });
 
-        // شارات الثقة
         document.getElementById('saveTrustBadges').addEventListener('click', async () => {
             const badges = document.getElementById('trustBadgesInput').value.split('\n').filter(b => b.trim());
             appData.settings.trustBadges = badges;
             changedTables.add('settings');
             await saveToSupabaseAdmin();
             refreshAllLists();
-            showToast('تم حفظ شارات الثقة');
+            showToast('تم حفظ شارات الثقة', 'success', true);
         });
 
-        // إعدادات التصميم
         document.getElementById('saveDesignSettings').addEventListener('click', async () => {
             appData.design = {
                 categoryBg: document.getElementById('categoryBg').value,
@@ -1349,30 +1486,39 @@
             };
             changedTables.add('settings');
             await saveToSupabaseAdmin();
-            showToast('تم حفظ إعدادات التصميم');
+            showToast('تم حفظ إعدادات التصميم', 'success', true);
         });
 
-        // الترويسة
         document.getElementById('saveHeaderBtn').addEventListener('click', async () => {
+            const oldImages = [...(appData.header.images || [])];
+            const newImages = document.getElementById('headerImagesInput').value
+                .split('\n')
+                .map(img => img.trim())
+                .filter(img => img !== '');
+
             appData.header.title = document.getElementById('headerTitleInput').value;
             appData.header.subtitle = document.getElementById('headerSubtitleInput').value;
-            const images = document.getElementById('headerImagesInput').value.split('\n').filter(img => img.trim());
-            appData.header.images = images;
+            appData.header.images = newImages;
+
+            // حذف الصور التي أُزيلت من القائمة
+            const deletedImages = oldImages.filter(img => !newImages.includes(img));
+            for (const imgUrl of deletedImages) {
+                await common.deleteImage(imgUrl).catch(err => console.warn('فشل حذف الصورة:', imgUrl, err));
+            }
+
             changedTables.add('settings');
             await saveToSupabaseAdmin();
-            showToast('تم حفظ إعدادات الترويسة');
+            showToast('تم حفظ إعدادات الترويسة', 'success', true);
         });
 
-        // شريط الإعلانات
         document.getElementById('saveTickerBtn').addEventListener('click', async () => {
             const tickerTexts = document.getElementById('tickerTextsInput').value.split('\n').filter(t => t.trim());
             appData.ticker = tickerTexts;
             changedTables.add('settings');
             await saveToSupabaseAdmin();
-            showToast('تم حفظ شريط الإعلانات');
+            showToast('تم حفظ شريط الإعلانات', 'success', true);
         });
 
-        // التذييل
         document.getElementById('saveFooterBtn').addEventListener('click', async () => {
             appData.footer.email = document.getElementById('footerEmail').value;
             appData.footer.phone = document.getElementById('footerPhone').value;
@@ -1387,10 +1533,9 @@
             appData.footer.payments = paymentsText.split(',').map(p => p.trim()).filter(p => p);
             changedTables.add('settings');
             await saveToSupabaseAdmin();
-            showToast('تم حفظ التذييل');
+            showToast('تم حفظ التذييل', 'success', true);
         });
 
-        // أذونات المتاجر
         document.getElementById('saveStorePermissions').addEventListener('click', async () => {
             const storeId = document.getElementById('storePermissionStoreSelect').value;
             if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً أولاً');
@@ -1400,32 +1545,50 @@
                 store.allowUpload = document.getElementById('storeAllowUpload').checked;
                 changedTables.add('stores');
                 await saveToSupabaseAdmin();
-                showToast('تم حفظ أذونات المتجر');
+                showToast('تم حفظ أذونات المتجر', 'success', true);
             }
         });
 
-        // زر النشر
+        document.getElementById('saveMarketPolicy').addEventListener('click', async () => {
+            appData.settings.marketPolicy = {
+                terms: document.getElementById('policyTerms').value,
+                returns: document.getElementById('policyReturns').value,
+                usage: document.getElementById('policyUsage').value
+            };
+            changedTables.add('settings');
+            await saveToSupabaseAdmin();
+            showToast('تم حفظ سياسة السوق', 'success', true);
+        });
+
+        document.getElementById('saveAboutUs').addEventListener('click', async () => {
+            appData.settings.aboutUs = {
+                description: document.getElementById('aboutDescription').value,
+                mission: document.getElementById('aboutMission').value,
+                vision: document.getElementById('aboutVision').value
+            };
+            changedTables.add('settings');
+            await saveToSupabaseAdmin();
+            showToast('تم حفظ معلومات من نحن', 'success', true);
+        });
+
         document.getElementById('publishBtn').addEventListener('click', async () => {
             await saveToSupabaseAdmin();
             if (window.broadcastChannel) window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
-            showToast('✅ تم نشر التحديثات');
+            showToast('✅ تم نشر التحديثات', 'success', true);
         });
 
-        // زر المعاينة
         document.getElementById('previewChangesBtn').addEventListener('click', async () => {
             await saveToSupabaseAdmin();
             if (window.broadcastChannel) window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
             window.open('index.html?preview=' + Date.now(), '_blank');
         });
 
-        // إعادة تعيين العداد
         document.getElementById('resetVisitorBtn').addEventListener('click', () => {
             localStorage.setItem('visitorCount', 0);
             document.getElementById('visitorCount').textContent = 0;
-            showToast('✅ تم إعادة تعيين العداد');
+            showToast('✅ تم إعادة تعيين العداد', 'success', true);
         });
 
-        // تصدير JSON
         document.getElementById('exportJsonBtn').addEventListener('click', () => {
             const dataStr = JSON.stringify(appData, null, 2);
             const blob = new Blob([dataStr], {type: "application/json"});
@@ -1435,10 +1598,9 @@
             a.download = "markets-data.json";
             a.click();
             URL.revokeObjectURL(url);
-            showToast('تم تصدير الملف بنجاح');
+            showToast('تم تصدير الملف بنجاح', 'success', true);
         });
 
-        // استيراد JSON
         document.getElementById('importJsonBtn').addEventListener('click', () => {
             document.getElementById('importFile').click();
         });
@@ -1451,8 +1613,7 @@
                 try {
                     const importedData = JSON.parse(ev.target.result);
                     if (!importedData.categories || !importedData.stores || !importedData.products) throw new Error('ملف غير صالح');
-                    appData = common.enhanceData(importedData);
-                    // حذف البيانات القديمة
+                    appData = importedData;
                     await common.supabaseClient.from('categories').delete().neq('id', '');
                     await common.supabaseClient.from('stores').delete().neq('id', '');
                     await common.supabaseClient.from('products').delete().neq('storeId', '');
@@ -1468,16 +1629,16 @@
                     changedTables.add('messages');
                     await saveToSupabaseAdmin();
                     refreshAllLists();
-                    showToast('✅ تم استيراد البيانات بنجاح');
+                    showToast('✅ تم استيراد البيانات بنجاح', 'success', true);
                     document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
                 } catch (err) {
                     alert('فشل استيراد الملف: ' + err.message);
+                    common.logAdminError(err, 'importData');
                 }
             };
             reader.readAsText(file);
         });
 
-        // زر الحفظ الفوري
         document.getElementById('forceSaveBtn').addEventListener('click', async () => {
             changedTables.add('categories');
             changedTables.add('stores');
@@ -1487,47 +1648,46 @@
             changedTables.add('messages');
             changedTables.add('settings');
             await saveToSupabaseAdmin();
-            showToast('✅ تم حفظ ومزامنة جميع البيانات');
+            showToast('✅ تم حفظ ومزامنة جميع البيانات', 'success', true);
         });
 
-        // ================== إعدادات رفع الصور (مع حذف القديم) ==================
-        // الفئات
+        // ================== إعدادات رفع الصور ==================
         setupImageUpload('categoryFeaturedImageFile', 'categoryFeaturedImage', 'categories');
         setupImageUpload('categoryIndexImageFile', 'categoryIndexImage', 'categories');
-        // المتاجر
         setupImageUpload('storeLogoFile', 'storeLogo', 'stores');
-        // المنتجات
         setupImageUpload('productImageFile', 'productImage', 'products');
-        // الإعلانات الدوارة
         setupImageUpload('carouselImageFile', 'carouselImage', 'carousel');
-        // التقييمات
         setupImageUpload('testimonialImageFile', 'testimonialImage', 'testimonials');
+        setupImageUpload('bannerImageFile1', 'bannerImage1', 'banners');
+        setupImageUpload('bannerImageFile2', 'bannerImage2', 'banners');
+        setupImageUpload('bannerImageFile3', 'bannerImage3', 'banners');
 
-        // رفع صور الترويسة (معالجة خاصة للملفات المتعددة)
         document.getElementById('headerImagesFile').addEventListener('change', async (e) => {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            // الحصول على القائمة الحالية للصور
-            let currentImages = document.getElementById('headerImagesInput').value.split('\n').filter(url => url.trim());
+            const currentImages = document.getElementById('headerImagesInput').value
+                .split('\n')
+                .filter(url => url.trim());
+
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 try {
-                    // لا يوجد رابط قديم محدد، نمرر null
-                    const newUrl = await common.uploadAndReplaceImage(file, null, 'header');
+                    const uniqueName = `header/${Date.now()}_${file.name}`;
+                    const newUrl = await common.uploadImage(file, uniqueName);
                     currentImages.push(newUrl);
-                    showToast(`✅ تم رفع الصورة ${i+1}`);
+                    showToast(`✅ تم رفع الصورة ${i+1}`, 'success', true);
                 } catch (err) {
-                    showToast(`❌ فشل رفع الصورة ${i+1}: ${err.message}`, 'error');
+                    showToast(`❌ فشل رفع الصورة ${i+1}: ${err.message}`, 'error', true);
+                    common.logAdminError(err, 'headerImageUpload');
                 }
             }
+
             document.getElementById('headerImagesInput').value = currentImages.join('\n');
             changedTables.add('settings');
             await saveToSupabaseAdmin();
             e.target.value = '';
-            showToast('✅ تم رفع جميع صور الترويسة');
         });
 
-        // ================== أحداث اختيار الفئات والمتاجر ==================
         document.getElementById('storeCategorySelect').addEventListener('change', (e) => populateStoresList(e.target.value));
         document.getElementById('productCategorySelect').addEventListener('change', (e) => {
             const cat = e.target.value;
@@ -1550,33 +1710,37 @@
                 document.getElementById('previewChangesBtn').style.display = 'block';
                 sessionStorage.setItem('adminLoggedIn', 'true');
                 try {
-                    // استخدام النظام الجديد للتحميل
+                    const cachedData = await common.loadFromIndexedDB();
+                    if (cachedData) {
+                        appData = cachedData;
+                        refreshAllLists();
+                        document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
+                        updateConnectionStatus();
+                    }
+
                     appData = await common.loadAppData();
-                    if (!appData) throw new Error('لا توجد بيانات');
-                    refreshAllLists();
+                    if (!cachedData) {
+                        refreshAllLists();
+                    }
                     document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
                     updateConnectionStatus();
-                    
-                    // إعداد البث اللحظي
+
                     window.broadcastChannel = new BroadcastChannel('markets_channel');
                     window.broadcastChannel.onmessage = (event) => {
                         if (event.data.type === 'DB_UPDATE') {
                             common.loadAppData().then(data => {
                                 appData = data;
                                 refreshAllLists();
-                                showToast('تم تحديث البيانات من جهة أخرى');
+                                showToast('تم تحديث البيانات من جهة أخرى', 'success', true);
                             });
                         }
                     };
-                    // حفظ تلقائي كل 30 ثانية
                     setInterval(() => { if (changedTables.size > 0) saveToSupabaseAdmin(); }, 30000);
-                    
-                    document.getElementById('connectionStatus').innerHTML = '✅ البيانات محفوظة محلياً ومُزامنة مع السحابة';
-                    document.getElementById('connectionStatus').style.background = '#10b981';
-                    showToast('✅ تم تحميل البيانات بنجاح');
+                    showToast('✅ تم تحميل البيانات بنجاح', 'success', true);
                 } catch (err) {
                     console.error(err);
-                    showToast("⚠️ فشل تحميل البيانات: " + err.message, 'error');
+                    showToast("⚠️ فشل تحميل البيانات: " + err.message, 'error', true);
+                    common.logAdminError(err, 'checkLogin');
                 }
             } else alert('الرمز غير صحيح');
         };
@@ -1585,19 +1749,23 @@
             if (e.key === 'Enter') checkLogin();
         });
 
-        // التحقق من الجلسة
         if (sessionStorage.getItem('adminLoggedIn') === 'true') checkLogin();
 
-        // مراقبة حالة الاتصال
         window.addEventListener('online', () => {
             updateConnectionStatus();
-            showToast('🔄 تم استعادة الاتصال، جاري المزامنة...');
+            showToast('🔄 تم استعادة الاتصال، جاري المزامنة...', 'success', true);
             if (appData) saveToSupabaseAdmin();
         });
         window.addEventListener('offline', () => {
             updateConnectionStatus();
-            showToast('⚠️ أنت غير متصل، سيتم حفظ البيانات محلياً', 'error');
+            showToast('⚠️ أنت غير متصل، سيتم حفظ البيانات محلياً', 'error', true);
+        });
+
+        document.getElementById('clearAdminErrors').addEventListener('click', () => {
+            window.adminErrors = [];
+            renderAdminErrors();
+            showToast('تم مسح سجل الأخطاء', 'success', true);
         });
     </script>
 </body>
-              </html>
+    </html>
