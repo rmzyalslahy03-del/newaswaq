@@ -11,10 +11,12 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+    </script>
+    <link rel="manifest" href="/manifest.json">
     <style>
-        /* ===== جميع الأنماط كما هي (تم نسخها من النسخة السابقة) ===== */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
         body { background-color: #f4f7fc; color: #1e293b; line-height: 1.6; user-select: none; }
 
@@ -39,6 +41,8 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 100%;
             border-radius: 0 0 30px 30px; background-size: cover; background-position: center;
             transition: background-image 1s ease-in-out;
+            /* صورة خلفية افتراضية تظهر قبل تحميل أي بيانات */
+            background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=80');
         }
         header::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -222,6 +226,10 @@
         .multi-horizontal { margin-bottom: 20px; }
         .multi-horizontal .section-title { font-size: 1.2rem; margin: 10px 0 5px; color: #0f172a; }
 
+        .banner-images-carousel { overflow: hidden; border-radius: 20px; margin-bottom: 10px; }
+        .banner-images-track { display: flex; transition: transform 0.5s ease; }
+        .banner-images-track img { flex-shrink: 0; width: 100%; max-height: 200px; object-fit: cover; border-radius: 20px; }
+
         .hidden { display: none !important; }
         .container { max-width: 1400px; margin: 0 auto; padding: 0 15px; }
         .full-width { width: 100%; }
@@ -237,7 +245,6 @@
         .toast-message { position: fixed; bottom: 20px; left: 20px; background: #10b981; color: white; padding: 12px 24px; border-radius: 40px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999; animation: slideIn 0.3s ease; }
         @keyframes slideIn { from { transform: translateX(-100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-        /* استجابة */
         @media (max-width: 768px) {
             header h1 { font-size: 2rem; }
             .index-grid { grid-template-columns: repeat(2, 1fr); }
@@ -246,14 +253,14 @@
         }
     </style>
     <script>
-        // حماية بسيطة ضد النسخ
         document.addEventListener('contextmenu', function(e) { e.preventDefault(); return false; });
         document.addEventListener('keydown', function(e) { if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'x' || e.key === 'v')) { e.preventDefault(); return false; } });
     </script>
 </head>
 <body>
-    <!-- العناصر الثابتة -->
-    <a href="#" class="whatsapp-float" id="whatsappFloat" target="_blank"><i class="fab fa-whatsapp"></i></a>
+    <!-- الأيقونة العائمة للواتساب -->
+    <a href="https://wa.me/967778562099" class="whatsapp-float" id="whatsappFloat" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>
+
     <div class="top-bar">
         <div class="top-bar-left"><span>مجمع أسواق ريادة المستهلك</span><span id="saudiFlagContainer" style="display: none;"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg" alt="علم السعودية" class="flag"></span></div>
         <div class="top-bar-right"><div class="profile-link" id="profileLink" style="display: none;"><i class="fas fa-user-circle"></i></div><div class="cart-icon" id="cartIcon" style="display: none;"><i class="fas fa-shopping-cart"></i><span class="cart-count" id="cartCount">0</span></div><a href="admin.html" class="admin-link">لوحة التحكم</a></div>
@@ -266,13 +273,14 @@
     <div class="index-grid" id="indexGrid"></div>
     <div style="text-align: center; margin: 10px;"><div class="visitor-counter">عدد الزوار: <span id="visitorCount">0</span></div></div>
 
-    <!-- الأقسام الرئيسية -->
     <div id="homePage"><div id="categoriesContainer"></div><section class="testimonials-section container"><h2 class="testimonials-title">آراء عملائنا</h2><div class="testimonials-horizontal" id="testimonialsHorizontal"><div class="testimonials-track" id="testimonialsTrack"></div></div></section><div class="trust-badges" id="trustBadgesContainer"></div><div class="footer-info container" id="footerSection"></div><footer class="copyright"><p>جميع الحقوق محفوظة &copy; 2025 | مجمع أسواق ريادة المستهلك</p></footer></div>
     <div id="categoryPage" class="hidden"></div>
     <div id="storePage" class="hidden"></div>
     <div id="searchPage" class="hidden"></div>
     <div id="profilePage" class="hidden"></div>
     <div id="contactPage" class="hidden"></div>
+    <div id="policyPage" class="hidden"></div>
+    <div id="aboutPage" class="hidden"></div>
 
     <!-- مودال المنتج -->
     <div id="productModal" class="product-modal hidden"><div class="product-modal-content" id="productModalContent"><button class="product-modal-close" onclick="window.closeProductModal()"><i class="fas fa-times"></i></button><img id="modalProductImage" src="" alt=""><h2 id="modalProductName"></h2><div class="price-container" id="modalProductPrice"></div><p id="modalProductDescription"></p><a href="#" id="modalProductLink" class="product-visit-btn" target="_blank">عرض في المتجر</a><button class="add-to-cart-btn" id="modalAddToCart" style="margin-top:10px;">➕ أضف للسلة</button><div class="share-buttons" style="margin-top:15px;"><a href="#" id="shareWhatsapp" target="_blank" class="share-btn whatsapp"><i class="fab fa-whatsapp"></i></a><a href="#" id="shareFacebook" target="_blank" class="share-btn facebook"><i class="fab fa-facebook"></i></a><a href="#" id="shareTwitter" target="_blank" class="share-btn twitter"><i class="fab fa-twitter"></i></a></div></div></div>
@@ -280,20 +288,12 @@
     <!-- سلة التسوق -->
     <div class="cart-sidebar" id="cartSidebar"><button class="close-cart" id="closeCart"><i class="fas fa-times"></i></button><h3>سلة التسوق</h3><div id="cartItems"></div><div class="cart-total" id="cartTotal">الإجمالي: 0</div><div class="cart-actions" id="cartActions"></div></div>
 
-    <!-- تحميل common.js أولاً -->
     <script src="common.js"></script>
-
-    <!-- كود index.js الخاص بالموقع -->
     <script>
-        // ================== المتغيرات العامة ==================
-        let appData = null; // سيتم تعبئته من النظام الجديد (IndexedDB / Supabase)
+        let appData = null;
 
-        // ================== دوال العرض الخاصة بالموقع (نفس النسخة السابقة مع تعديل استخدام common) ==================
-
-        // عرض الصفحة الرئيسية
         function renderHomePage() {
             if (!appData) return;
-            // تحديث الهيدر والترويسة
             document.getElementById('headerTitle').textContent = appData.header.title;
             document.getElementById('headerSubtitle').textContent = appData.header.subtitle;
             document.getElementById('tickerContent').innerHTML = appData.ticker.map(t => `<span>${DOMPurify.sanitize(t)}</span>`).join('');
@@ -309,7 +309,6 @@
                 document.getElementById('contestsContent').innerHTML = content;
             } else document.getElementById('contestsBar').style.display = 'none';
 
-            // عرض الفهرس
             const indexGrid = document.getElementById('indexGrid');
             indexGrid.innerHTML = '';
             const categoriesForIndex = (appData.categories || []).filter(cat => cat.showInIndex !== false).sort((a, b) => (a.indexOrder || 0) - (b.indexOrder || 0));
@@ -318,6 +317,7 @@
                 categoriesForIndex.forEach(cat => {
                     const item = document.createElement('div');
                     item.className = 'index-item';
+                    item.dataset.categoryId = cat.id;
                     const imgUrl = cat.indexImage || 'https://via.placeholder.com/600x400?text=' + encodeURIComponent(cat.name);
                     item.innerHTML = `<div class="index-image" style="background-image: url('${imgUrl}');"></div><div class="index-title"><i class="${cat.icon || 'fas fa-tag'}" style="color:${cat.color || '#9b4d96'};"></i> ${cat.name}</div>`;
                     item.addEventListener('click', (e) => { e.preventDefault(); showCategoryPage(cat.slug); });
@@ -325,7 +325,6 @@
                 });
             }
 
-            // عرض الفئات والمتاجر
             const container = document.getElementById('categoriesContainer');
             container.innerHTML = '';
             const activeCarousels = (appData.carousel || []).filter(c => c.active).sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -334,6 +333,7 @@
                 const stores = (appData.stores[catName] || []).filter(store => !store.hidden);
                 const section = document.createElement('section');
                 section.className = `category-section cat-${cat.slug}`;
+                section.dataset.categoryId = cat.id;
                 section.style.background = `var(--category-bg)`;
                 let adHtml = '';
                 if (cat.adEnabled && cat.adText) adHtml = `<div class="category-ticker"><div class="category-ticker-content">${DOMPurify.sanitize(cat.adText)}</div></div>`;
@@ -343,14 +343,13 @@
                     const products = appData.products[store.id] || [];
                     let productsHtml = '';
                     products.slice(0, store.productDisplayCount || 10).forEach(prod => {
-                        const addToCartBtn = appData.settings.cartEnabled ? `<button class="add-to-cart-btn" onclick="window.addToCart({id:${prod.id}, storeId:'${store.id}', name:'${prod.name}', newPrice:${prod.newPrice}, image:'${prod.image}'}, window.appData)"><i class="fas fa-cart-plus"></i> ${translate('إضافة للسلة', appData)}</button>` : '';
+                        const addToCartBtn = appData.settings.cartEnabled ? `<button class="add-to-cart-btn" onclick="window.addToCart({id:${prod.id}, storeId:'${store.id}', name:'${prod.name}', newPrice:${prod.newPrice}, image:'${prod.image}'}, appData)"><i class="fas fa-cart-plus"></i> ${translate('إضافة للسلة', appData)}</button>` : '';
                         productsHtml += `<div class="product-item" data-product-id="${prod.id}" data-store-id="${store.id}" data-product-name="${prod.name}" data-product-url="${window.location.href.split('#')[0]}#product/${store.id}/${prod.id}"><img src="${prod.image}" loading="lazy"><div class="product-name">${prod.name}</div><div class="price-container"><span class="old-price">${prod.oldPrice} ${getCurrencySymbol(appData)}</span><span class="new-price">${prod.newPrice} ${getCurrencySymbol(appData)}</span></div><div><a href="#store/${store.id}" class="product-visit-btn"><i class="fas fa-store"></i> ${translate('زيارة المتجر', appData)}</a>${addToCartBtn}</div><div style="margin-top:5px;"><button class="like-btn ${currentUser && currentUser.likes.includes(prod.id) ? 'liked' : ''}" onclick="window.toggleLike(${prod.id}, '${store.id}', this)">${currentUser && currentUser.likes.includes(prod.id) ? '<i class="fas fa-heart"></i>' : '<i class="far fa-heart"></i>'}</button><button class="favorite-btn ${currentUser && currentUser.favorites.includes(prod.id) ? 'favorited' : ''}" onclick="window.toggleFavorite(${prod.id}, '${store.id}', this)">${currentUser && currentUser.favorites.includes(prod.id) ? '<i class="fas fa-bookmark"></i>' : '<i class="far fa-bookmark"></i>'}</button></div></div>`;
                     });
                     const storeLink = store.externalUrl && store.externalUrl !== '#' ? store.externalUrl : '#';
                     storesGrid.innerHTML += `<div class="store-card" data-store-id="${store.id}" data-store-name="${store.name}" data-store-url="${window.location.href.split('#')[0]}#store/${store.id}" onclick="location.href='#store/${store.id}'"><div class="store-header"><img src="${store.logo}" class="store-logo" loading="lazy"><div class="store-info"><h3><span>${store.name}</span><a href="${storeLink}" target="_blank" class="store-visit-btn" onclick="event.stopPropagation();"><i class="fas fa-external-link-alt"></i> ${translate('زيارة', appData)}</a></h3><span class="store-category-badge" style="background:${cat.color}30; color:${cat.color};">${store.category}</span></div></div><div class="products-horizontal"><div class="products-track">${productsHtml}</div></div></div>`;
                 });
                 container.appendChild(section);
-                // إضافة إعلان دوار بين الفئات
                 if ((idx + 1) % 4 === 0 && activeCarousels.length > 0) {
                     const carouselDiv = document.createElement('div');
                     carouselDiv.className = 'carousel-ad';
@@ -358,10 +357,8 @@
                     container.appendChild(carouselDiv);
                 }
             });
-            // بدء الـ Carousel بعد الإضافة
             startCarousel();
 
-            // عرض التقييمات
             const testimonialsTrack = document.getElementById('testimonialsTrack');
             testimonialsTrack.innerHTML = '';
             appData.testimonials.forEach(t => {
@@ -370,22 +367,44 @@
                 testimonialsTrack.innerHTML += `<div class="testimonial-card"><img src="${t.image}" class="customer-img" loading="lazy"><div class="customer-name">${t.name}</div><div class="customer-rating">${starsHtml}</div><div class="customer-review">${t.review}</div></div>`;
             });
 
-            // شارات الثقة
             const trustContainer = document.getElementById('trustBadgesContainer');
             trustContainer.innerHTML = '';
             (appData.settings.trustBadges || []).forEach(badge => { trustContainer.innerHTML += `<img src="${badge}" alt="badge" loading="lazy">`; });
 
-            // التذييل
             const footerSection = document.getElementById('footerSection');
-            footerSection.innerHTML = `<div class="contact-section"><h3>${translate('تواصل معنا', appData)}</h3><p>${translate('البريد الإلكتروني', appData)}: ${appData.footer.email}</p><p>${translate('الهاتف', appData)}: ${appData.footer.phone}</p><div class="social-icons">${appData.footer.social.map(s => `<a href="${s.url}" target="_blank"><i class="${s.icon}"></i></a>`).join('')}</div><button onclick="showContactPage()" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:40px; margin-top:10px; cursor:pointer;">اتصل بنا</button></div><div class="payment-section"><h3>${translate('خدمات الدفع', appData)}</h3><p>${translate('طرق دفع آمنة ومتعددة', appData)}</p><div class="payment-methods">${appData.footer.payments.map(p => `<i class="${p}"></i>`).join('')}</div></div>`;
+            const socialIcons = (appData.footer.social || []).length > 0 ? appData.footer.social : [
+                { icon: "fab fa-facebook-f", url: "#" },
+                { icon: "fab fa-twitter", url: "#" },
+                { icon: "fab fa-instagram", url: "#" },
+                { icon: "fab fa-whatsapp", url: "https://wa.me/" + (window.getWhatsAppNumber ? window.getWhatsAppNumber() : '967778562099') }
+            ];
+            const socialHtml = socialIcons.map(s => {
+                const url = s.url || '#';
+                return `<a href="${url}" target="_blank" rel="noopener"><i class="${s.icon}"></i></a>`;
+            }).join('');
 
-            // تحديث السلة
+            footerSection.innerHTML = `
+                <div class="contact-section">
+                    <h3>${translate('تواصل معنا', appData)}</h3>
+                    <p>${translate('البريد الإلكتروني', appData)}: ${appData.footer.email}</p>
+                    <p>${translate('الهاتف', appData)}: ${appData.footer.phone}</p>
+                    <div class="social-icons">${socialHtml}</div>
+                    <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap; justify-content:center;">
+                        <button onclick="showContactPage()" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:40px; cursor:pointer;">اتصل بنا</button>
+                        <button onclick="showPolicyPage()" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:40px; cursor:pointer;">سياسة السوق</button>
+                        <button onclick="showAboutPage()" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:40px; cursor:pointer;">من نحن</button>
+                    </div>
+                </div>
+                <div class="payment-section">
+                    <h3>${translate('خدمات الدفع', appData)}</h3>
+                    <p>${translate('طرق دفع آمنة ومتعددة', appData)}</p>
+                    <div class="payment-methods">${appData.footer.payments.map(p => `<i class="${p}"></i>`).join('')}</div>
+                </div>`;
+
             updateCartDisplay(appData);
-            // إضافة خاصية المشاركة بالضغط المطول
             attachLongPressShare();
         }
 
-        // دالة المشاركة بالضغط المطول (نفسها)
         function attachLongPressShare() {
             const items = document.querySelectorAll('.product-item img, .store-logo');
             items.forEach(img => {
@@ -410,7 +429,8 @@
             const rect = img.getBoundingClientRect();
             popup.style.top = (rect.top - 60) + 'px';
             popup.style.left = (rect.left - 100) + 'px';
-            popup.innerHTML = `<a href="https://wa.me/?text=${encodeURIComponent(name + ' ' + url)}" target="_blank"><i class="fab fa-whatsapp" style="color:#25d366;"></i></a><a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}" target="_blank"><i class="fab fa-facebook" style="color:#1877f2;"></i></a><a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(name)}&url=${encodeURIComponent(url)}" target="_blank"><i class="fab fa-twitter" style="color:#1da1f2;"></i></a><button onclick="copyToClipboard('${url}')"><i class="fas fa-link" style="color:#64748b;"></i></button>`;
+            const waNumber = window.getWhatsAppNumber ? window.getWhatsAppNumber() : '967778562099';
+            popup.innerHTML = `<a href="https://wa.me/${waNumber}?text=${encodeURIComponent(name + ' ' + url)}" target="_blank"><i class="fab fa-whatsapp" style="color:#25d366;"></i></a><a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}" target="_blank"><i class="fab fa-facebook" style="color:#1877f2;"></i></a><a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(name)}&url=${encodeURIComponent(url)}" target="_blank"><i class="fab fa-twitter" style="color:#1da1f2;"></i></a><button onclick="copyToClipboard('${url}')"><i class="fas fa-link" style="color:#64748b;"></i></button>`;
             document.body.appendChild(popup);
             setTimeout(() => popup.remove(), 3000);
             document.addEventListener('click', function closePopup(e) { if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', closePopup); } });
@@ -418,7 +438,6 @@
 
         window.copyToClipboard = function(text) { navigator.clipboard.writeText(text).then(() => alert('تم نسخ الرابط')); };
 
-        // ================== عرض صفحة الفئة ==================
         function showCategoryPage(slug) {
             const cat = appData.categories.find(c => c.slug === slug);
             if (!cat) return;
@@ -437,7 +456,6 @@
             categoryPage.innerHTML = `<div style="padding:2rem;"><button class="back-home-btn" onclick="showHomePage()">${translate('العودة للرئيسية', appData)}</button><h2 style="color:${cat.color};">${cat.name}</h2>${horizontalStores ? '<div class="stores-horizontal"><div class="stores-track">' + horizontalStores + '</div></div>' : ''}<div class="stores-grid">${gridStores || '<p>لا توجد متاجر في هذه الفئة</p>'}</div></div>`;
         }
 
-        // ================== عرض صفحة المتجر ==================
         function showStorePage(storeId) {
             let store = null;
             for (let cat in appData.stores) {
@@ -452,12 +470,17 @@
             const realProducts = appData.products[storeId] || [];
             const numStrips = store.numStrips || 10;
             const productsPerStrip = store.productDisplayCount || 10;
-            const stripTitles = [
+            const defaultTitles = [
                 "🔥 أحدث المنتجات", "⭐ الأكثر مبيعاً", "💰 عروض خاصة", "🎁 هدايا مع كل طلب",
                 "✨ منتجات حصرية", "💎 أعلى تقييم", "📦 عروض التوفير", "🚚 توصيل سريع",
                 "🌟 منتجات مميزة", "🛒 إضافات جديدة", "🏆 توصيات اليوم", "💝 هدايا مناسبة",
                 "🎯 عروض محدودة", "📱 تقنيات حديثة", "👗 أزياء رائجة"
             ];
+
+            const activeBanners = (store.banners || [])
+                .filter(b => b.active)
+                .sort((a, b) => a.order - b.order);
+
             const strips = Array(numStrips).fill().map(() => []);
             if (realProducts.length > 0) {
                 realProducts.forEach((prod, idx) => {
@@ -479,7 +502,7 @@
                 stripProducts = stripProducts.slice(0, productsPerStrip);
                 let productsHtml = '';
                 stripProducts.forEach(prod => {
-                    const addToCartBtn = (appData.settings.cartEnabled) ? `<button class="add-to-cart-btn" onclick="window.addToCart({id:${prod.id}, storeId:'${store.id}', name:'${prod.name}', newPrice:${prod.newPrice}, image:'${prod.image}'}, window.appData)"><i class="fas fa-cart-plus"></i> ${translate('إضافة للسلة', appData)}</button>` : '';
+                    const addToCartBtn = (appData.settings.cartEnabled) ? `<button class="add-to-cart-btn" onclick="window.addToCart({id:${prod.id}, storeId:'${store.id}', name:'${prod.name}', newPrice:${prod.newPrice}, image:'${prod.image}'}, appData)"><i class="fas fa-cart-plus"></i> ${translate('إضافة للسلة', appData)}</button>` : '';
                     const productLink = prod.link && prod.link !== '#' ? prod.link : '#';
                     productsHtml += `<div class="product-item" data-product-id="${prod.id}" data-store-id="${store.id}" data-product-name="${prod.name}" data-product-url="${window.location.href.split('#')[0]}#product/${store.id}/${prod.id}">
                         <img src="${prod.image}" loading="lazy">
@@ -498,19 +521,37 @@
                         </div>
                     </div>`;
                 });
-                const stripTitle = stripTitles[i % stripTitles.length];
-                stripsHtml += `<div class="multi-horizontal">
-                    <div class="section-title">${stripTitle}</div>
-                    <div class="products-horizontal">
-                        <div class="products-track">${productsHtml}</div>
-                    </div>
-                </div>`;
+
+                const banner = activeBanners.find(b => b.order === i);
+                let stripHeader = '';
+                if (!banner) {
+                    stripHeader = `<div class="section-title">${defaultTitles[i % defaultTitles.length]}</div>`;
+                } else if (banner.type === 'text') {
+                    stripHeader = `
+                        <div class="banner-text" data-banner-id="${banner.id}" data-store-id="${store.id}">
+                            <div class="category-ticker">
+                                <div class="category-ticker-content">
+                                    ${DOMPurify.sanitize(banner.content)}
+                                </div>
+                            </div>
+                        </div>`;
+                } else if (banner.type === 'images' && banner.images && banner.images.length > 0) {
+                    stripHeader = `
+                        <div class="banner-images-carousel" data-banner-id="${banner.id}" data-store-id="${store.id}">
+                            <div class="banner-images-track">
+                                ${banner.images.map(img => `<img src="${img}" loading="lazy">`).join('')}
+                            </div>
+                        </div>`;
+                }
+
+                stripsHtml += `<div class="multi-horizontal">${stripHeader}<div class="products-horizontal"><div class="products-track">${productsHtml}</div></div></div>`;
             }
             if (!hasAnyProducts || realProducts.length === 0) {
                 stripsHtml = '<p style="text-align:center; padding:20px;">🚫 لا توجد منتجات في هذا المتجر حالياً.</p>';
             }
 
-            const shareButtons = `<div class="share-buttons"><a href="https://wa.me/?text=${encodeURIComponent(store.name + ' ' + window.location.href)}" target="_blank" class="share-btn whatsapp"><i class="fab fa-whatsapp"></i></a><a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}" target="_blank" class="share-btn facebook"><i class="fab fa-facebook-f"></i></a><a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(store.name)}&url=${encodeURIComponent(window.location.href)}" target="_blank" class="share-btn twitter"><i class="fab fa-twitter"></i></a></div>`;
+            const waNumber = window.getWhatsAppNumber ? window.getWhatsAppNumber() : '967778562099';
+            const shareButtons = `<div class="share-buttons"><a href="https://wa.me/${waNumber}?text=${encodeURIComponent(store.name + ' ' + window.location.href)}" target="_blank" class="share-btn whatsapp"><i class="fab fa-whatsapp"></i></a><a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}" target="_blank" class="share-btn facebook"><i class="fab fa-facebook-f"></i></a><a href="https://twitter.com/intent/tweet?text=${encodeURIComponent(store.name)}&url=${encodeURIComponent(window.location.href)}" target="_blank" class="share-btn twitter"><i class="fab fa-twitter"></i></a></div>`;
             let ownerUploadHtml = '';
             if (store.allowUpload) {
                 ownerUploadHtml = `<div class="store-owner-upload"><h4>رفع شعار جديد</h4><input type="password" id="ownerCode-${store.id}" placeholder="الرمز السري"><input type="file" id="ownerLogo-${store.id}" accept="image/*" onchange="window.handleStoreLogoUpload(event, '${store.id}')"><button onclick="window.uploadStoreLogo('${store.id}')">رفع</button></div>`;
@@ -533,15 +574,24 @@
                 ${stripsHtml}
             </div>`;
             attachLongPressShare();
+
+            document.querySelectorAll('.banner-images-carousel').forEach(carousel => {
+                const track = carousel.querySelector('.banner-images-track');
+                const images = track.querySelectorAll('img');
+                if (images.length <= 1) return;
+                let current = 0;
+                setInterval(() => {
+                    current = (current + 1) % images.length;
+                    track.style.transform = `translateX(-${current * 100}%)`;
+                }, 3000);
+            });
         }
 
-        // ===== دالة رفع شعار المتجر باستخدام common.uploadAndReplaceImage =====
         let tempStoreLogoFile = null;
         window.handleStoreLogoUpload = function(event, storeId) {
             const file = event.target.files[0];
             if (file) {
                 tempStoreLogoFile = file;
-                // عرض معاينة فورية
                 const reader = new FileReader();
                 reader.onload = e => {
                     document.getElementById(`storeLogo-${storeId}`).src = e.target.result;
@@ -574,7 +624,6 @@
             }
         };
 
-        // ================== مودال المنتج ==================
         window.showProductModal = function(storeId, productId) {
             const store = Object.values(appData.stores).flat().find(s => s.id === storeId);
             const product = appData.products[storeId]?.find(p => p.id == productId);
@@ -586,7 +635,8 @@
             document.getElementById('modalProductLink').href = `#store/${storeId}`;
             document.getElementById('modalAddToCart').onclick = () => addToCart({id:product.id, storeId, name:product.name, newPrice:product.newPrice, image:product.image}, appData);
             const url = window.location.href.split('#')[0] + `#product/${storeId}/${productId}`;
-            document.getElementById('shareWhatsapp').href = `https://wa.me/?text=${encodeURIComponent(product.name + ' ' + url)}`;
+            const waNumber = window.getWhatsAppNumber ? window.getWhatsAppNumber() : '967778562099';
+            document.getElementById('shareWhatsapp').href = `https://wa.me/${waNumber}?text=${encodeURIComponent(product.name + ' ' + url)}`;
             document.getElementById('shareFacebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
             document.getElementById('shareTwitter').href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(product.name)}&url=${encodeURIComponent(url)}`;
             document.getElementById('productModal').classList.remove('hidden');
@@ -594,7 +644,6 @@
 
         window.closeProductModal = function() { document.getElementById('productModal').classList.add('hidden'); };
 
-        // ================== البحث ==================
         function performSearch() {
             const query = document.getElementById('searchInput').value.trim().toLowerCase();
             if (!query) return;
@@ -635,7 +684,6 @@
         document.getElementById('searchBtn').addEventListener('click', performSearch);
         document.getElementById('searchInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') performSearch(); });
 
-        // ================== صفحة الاتصال ==================
         function showContactPage() {
             document.getElementById('homePage').classList.add('hidden');
             document.getElementById('contactPage').classList.remove('hidden');
@@ -655,7 +703,46 @@
             });
         }
 
-        // ================== صفحة الملف الشخصي ==================
+        function showPolicyPage() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('contactPage').classList.add('hidden');
+            document.getElementById('policyPage').classList.remove('hidden');
+            const policy = appData.settings.marketPolicy || {};
+            document.getElementById('policyPage').innerHTML = `
+            <div style="padding:2rem; max-width:800px; margin:0 auto;">
+                <button class="back-home-btn" onclick="showHomePage()">العودة للرئيسية</button>
+                <h2 style="color:#0f172a; margin-bottom:20px;">سياسة السوق</h2>
+                <div style="background:white; border-radius:20px; padding:20px; line-height:1.8;">
+                    <h3>شروط البيع والشراء</h3>
+                    <p>${DOMPurify.sanitize(policy.terms || '')}</p>
+                    <h3>سياسة الاسترجاع</h3>
+                    <p>${DOMPurify.sanitize(policy.returns || '')}</p>
+                    <h3>شروط الاستخدام</h3>
+                    <p>${DOMPurify.sanitize(policy.usage || '')}</p>
+                </div>
+            </div>`;
+        }
+
+        function showAboutPage() {
+            document.getElementById('homePage').classList.add('hidden');
+            document.getElementById('contactPage').classList.add('hidden');
+            document.getElementById('aboutPage').classList.remove('hidden');
+            const about = appData.settings.aboutUs || {};
+            document.getElementById('aboutPage').innerHTML = `
+            <div style="padding:2rem; max-width:800px; margin:0 auto;">
+                <button class="back-home-btn" onclick="showHomePage()">العودة للرئيسية</button>
+                <h2 style="color:#0f172a; margin-bottom:20px;">من نحن</h2>
+                <div style="background:white; border-radius:20px; padding:20px; line-height:1.8;">
+                    <h3>نبذة عن السوق</h3>
+                    <p>${DOMPurify.sanitize(about.description || '')}</p>
+                    <h3>رسالتنا</h3>
+                    <p>${DOMPurify.sanitize(about.mission || '')}</p>
+                    <h3>رؤيتنا</h3>
+                    <p>${DOMPurify.sanitize(about.vision || '')}</p>
+                </div>
+            </div>`;
+        }
+
         window.renderProfilePage = function() {
             if (!currentUser) { showLoginDialog(); return; }
             const profileDiv = document.getElementById('profilePage');
@@ -711,7 +798,6 @@
             document.getElementById('profileTabContent').innerHTML = `<div class="profile-products">${html || '<p>لا توجد منتجات بعد</p>'}</div>`;
         };
 
-        // ================== التنقل بين الصفحات ==================
         function showHomePage() {
             document.getElementById('homePage').classList.remove('hidden');
             document.getElementById('categoryPage').classList.add('hidden');
@@ -719,6 +805,8 @@
             document.getElementById('searchPage').classList.add('hidden');
             document.getElementById('profilePage').classList.add('hidden');
             document.getElementById('contactPage').classList.add('hidden');
+            document.getElementById('policyPage').classList.add('hidden');
+            document.getElementById('aboutPage').classList.add('hidden');
             closeProductModal();
         }
 
@@ -734,23 +822,69 @@
             } else showHomePage();
         });
 
-        // ================== مراقبة التحديثات من BroadcastChannel ==================
         window.broadcastChannel = new BroadcastChannel('markets_channel');
-        window.broadcastChannel.onmessage = (event) => {
+        window.broadcastChannel.onmessage = async (event) => {
             if (event.data.type === 'DB_UPDATE') {
-                // إعادة تحميل البيانات من IndexedDB أو السحابة
-                common.loadAppData().then(data => {
-                    appData = data;
-                    common.applyDesignSettings(appData);
-                    renderHomePage();
-                    showToast('تم تحديث الموقع');
-                }).catch(err => {
-                    showToast('فشل تحديث البيانات: ' + err.message, 'error');
-                });
+                try {
+                    const freshData = await common.fetchFromSupabase();
+                    if (freshData && appData) {
+                        common.applyPartialUpdates(appData, freshData);
+                        appData = freshData;
+                        await common.saveToIndexedDB(appData);
+                        common.applyDesignSettings(appData);
+                        showToast('تم تحديث الموقع');
+                    }
+                } catch (err) {
+                    common.logAdminError(err, 'BroadcastChannel update');
+                }
             }
         };
 
-        // ================== سحب للتحديث (Pull to Refresh) ==================
+        document.addEventListener('product-image-updated', (e) => {
+            const { productId, newImage } = e.detail;
+            const selector = `.product-item[data-product-id="${productId}"] img`;
+            window.updateElementImage(selector, newImage);
+        });
+
+        document.addEventListener('store-logo-updated', (e) => {
+            const { storeId, newLogo } = e.detail;
+            window.updateElementImage(`.store-card[data-store-id="${storeId}"] .store-logo`, newLogo);
+            const storeLogoInPage = document.getElementById(`storeLogo-${storeId}`);
+            if (storeLogoInPage) storeLogoInPage.src = newLogo;
+        });
+
+        document.addEventListener('category-image-updated', (e) => {
+            const { categoryId, featuredImage, indexImage } = e.detail;
+            if (featuredImage) {
+                const catSection = document.querySelector(`[data-category-id="${categoryId}"] .category-featured-image`);
+                if (catSection) catSection.src = featuredImage;
+            }
+            if (indexImage) {
+                const idxItem = document.querySelector(`.index-item[data-category-id="${categoryId}"] .index-image`);
+                if (idxItem) idxItem.style.backgroundImage = `url('${indexImage}')`;
+            }
+        });
+
+        document.addEventListener('store-banner-text-updated', (e) => {
+            const { storeId, bannerId, content } = e.detail;
+            const textEl = document.querySelector(`.banner-text[data-store-id="${storeId}"][data-banner-id="${bannerId}"] .category-ticker-content`);
+            if (textEl) textEl.textContent = content;
+        });
+
+        document.addEventListener('store-banner-images-updated', (e) => {
+            const { storeId, bannerId, images } = e.detail;
+            const track = document.querySelector(`.banner-images-carousel[data-store-id="${storeId}"][data-banner-id="${bannerId}"] .banner-images-track`);
+            if (track) {
+                track.innerHTML = images.map(img => `<img src="${img}" loading="lazy">`).join('');
+            }
+        });
+
+        document.addEventListener('store-banner-structure-updated', (e) => {
+            const storeId = e.detail.storeId;
+            if (document.getElementById('storePage').classList.contains('hidden')) return;
+            if (location.hash === `#store/${storeId}`) showStorePage(storeId);
+        });
+
         let pullStartY = 0, pullMoveY = 0, pulling = false, refreshIndicator = null;
         function createRefreshIndicator() { const div = document.createElement('div'); div.id = 'pullRefreshIndicator'; div.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> اسحب للتحديث'; document.body.appendChild(div); return div; }
         function updateRefreshIndicator(offset) { if (!refreshIndicator) return; if (offset > 0 && offset <= 60) refreshIndicator.style.top = `${Math.min(0, offset - 60)}px`; if (offset >= 60) { refreshIndicator.innerHTML = '<i class="fas fa-arrow-down"></i> حرر للتحديث'; refreshIndicator.style.top = '0px'; } else refreshIndicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> اسحب للتحديث'; }
@@ -760,55 +894,62 @@
         async function onTouchEnd() { if (!pulling) return; pulling = false; if (pullMoveY >= 60) { if (refreshIndicator) { refreshIndicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> جاري التحديث...'; refreshIndicator.style.top = '0px'; } await refreshData(); hideRefreshIndicator(); showToast('تم تحديث الموقع'); } else hideRefreshIndicator(); pullStartY = 0; pullMoveY = 0; }
         if ('ontouchstart' in window) { document.body.addEventListener('touchstart', onTouchStart, { passive: false }); document.body.addEventListener('touchmove', onTouchMove, { passive: false }); document.body.addEventListener('touchend', onTouchEnd); }
 
-        // ================== دالة تحديث البيانات ==================
         window.refreshData = async function() {
             try {
-                // إعادة تحميل من السحابة وتحديث المحلي
                 const remoteData = await common.fetchFromSupabase();
                 if (remoteData) {
                     appData = remoteData;
                     await common.saveToIndexedDB(appData);
                     common.applyDesignSettings(appData);
                     renderHomePage();
-                    showToast('تم تحديث البيانات من السحابة');
+                    showToast('تم تحديث الموقع');
                 } else {
-                    showToast('لا توجد بيانات جديدة', 'error');
+                    showToast('لا توجد بيانات جديدة');
                 }
             } catch (err) {
-                showToast('⚠️ فشل تحديث البيانات. تحقق من الاتصال.', 'error');
+                common.logAdminError(err, 'refreshData');
+                showToast('يرجى المحاولة لاحقاً', 'error');
             }
         };
 
-        // ================== تهيئة التطبيق ==================
         let visitorCount = localStorage.getItem('visitorCount') ? parseInt(localStorage.getItem('visitorCount')) : 0;
         if (!sessionStorage.getItem('visited')) { visitorCount++; localStorage.setItem('visitorCount', visitorCount); sessionStorage.setItem('visited', 'true'); }
         document.getElementById('visitorCount').textContent = visitorCount;
 
         (async function initializeApp() {
+            let cached = null;
             try {
-                // استخدام loadAppData التي تحاول IndexedDB أولاً ثم السحابة
+                cached = await common.loadFromIndexedDB();
+                if (cached) {
+                    appData = cached;
+                    common.applyDesignSettings(appData);
+                    renderHomePage();
+                    updateCartDisplay(appData);
+                }
+
                 appData = await common.loadAppData();
-                if (!appData) throw new Error('لا توجد بيانات متاحة');
-                common.applyDesignSettings(appData);
+                if (!cached) {
+                    common.applyDesignSettings(appData);
+                    renderHomePage();
+                }
                 common.startHeaderInterval(appData);
-                renderHomePage();
-                common.updateCartDisplay(appData);
+                updateCartDisplay(appData);
                 if (window.location.hash) window.dispatchEvent(new Event('hashchange'));
-                showToast("✅ تم تحميل الموقع بنجاح" + (common.isOnline ? " من السحابة" : " (وضع غير متصل)"));
+                showToast("✅ تم تحميل الموقع بنجاح");
             } catch (err) {
-                console.error("فشل التهيئة:", err);
-                document.getElementById('homePage').innerHTML = `<div class="connection-error">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <h3>فشل تحميل البيانات</h3>
-                    <p>${err.message}</p>
-                    <button class="retry-connection" onclick="location.reload()">محاولة مرة أخرى</button>
-                    <button class="manual-refresh" onclick="window.refreshData()">تحديث البيانات</button>
-                </div>`;
-                showToast("⚠️ لا يمكن تحميل البيانات. تأكد من اتصالك بالإنترنت.", 'error');
+                common.logAdminError(err, 'initializeApp');
+                if (!cached) {
+                    document.getElementById('homePage').innerHTML = `
+                        <div style="text-align:center; padding:40px;">
+                            <i class="fas fa-sync-alt fa-spin" style="font-size:3rem; color:#fbbf24;"></i>
+                            <h3>جاري تحديث الموقع...</h3>
+                            <p>يرجى الانتظار قليلاً أو المحاولة لاحقاً</p>
+                            <button onclick="location.reload()" style="background:#3b82f6; color:white; border:none; padding:10px 20px; border-radius:40px; margin-top:20px; cursor:pointer;">تحديث الصفحة</button>
+                        </div>`;
+                }
             }
         })();
 
-        // ربط أيقونة السلة
         document.getElementById('cartIcon').addEventListener('click', () => {
             document.getElementById('cartSidebar').classList.toggle('open');
         });
@@ -816,13 +957,11 @@
             document.getElementById('cartSidebar').classList.remove('open');
         });
 
-        // ربط أيقونة الملف الشخصي
         document.getElementById('profileLink').addEventListener('click', () => {
             if (currentUser) renderProfilePage();
             else showLoginDialog();
         });
 
-        // جعل appData متاحاً عالمياً للدوال الأخرى
         window.appData = appData;
     </script>
 </body>
