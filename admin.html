@@ -211,7 +211,7 @@
                     <input type="text" id="headerSubtitleInput" placeholder="النص الفرعي">
                     <label>صور الخلفية (روابط)</label>
                     <textarea id="headerImagesInput" rows="3"></textarea>
-                    <label>رفع صور (سيتم رفعها وإضافتها للقائمة)</label>
+                    <label>رفع صور (سيتم رفعها وحذف القديمة)</label>
                     <input type="file" id="headerImagesFile" accept="image/*" multiple>
                     <button id="saveHeaderBtn">حفظ</button>
                 </div>
@@ -1490,22 +1490,10 @@
         });
 
         document.getElementById('saveHeaderBtn').addEventListener('click', async () => {
-            const oldImages = [...(appData.header.images || [])];
-            const newImages = document.getElementById('headerImagesInput').value
-                .split('\n')
-                .map(img => img.trim())
-                .filter(img => img !== '');
-
             appData.header.title = document.getElementById('headerTitleInput').value;
             appData.header.subtitle = document.getElementById('headerSubtitleInput').value;
-            appData.header.images = newImages;
-
-            // حذف الصور التي أُزيلت من القائمة
-            const deletedImages = oldImages.filter(img => !newImages.includes(img));
-            for (const imgUrl of deletedImages) {
-                await common.deleteImage(imgUrl).catch(err => console.warn('فشل حذف الصورة:', imgUrl, err));
-            }
-
+            const images = document.getElementById('headerImagesInput').value.split('\n').filter(img => img.trim());
+            appData.header.images = images;
             changedTables.add('settings');
             await saveToSupabaseAdmin();
             showToast('تم حفظ إعدادات الترويسة', 'success', true);
@@ -1665,15 +1653,11 @@
         document.getElementById('headerImagesFile').addEventListener('change', async (e) => {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            const currentImages = document.getElementById('headerImagesInput').value
-                .split('\n')
-                .filter(url => url.trim());
-
+            let currentImages = document.getElementById('headerImagesInput').value.split('\n').filter(url => url.trim());
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 try {
-                    const uniqueName = `header/${Date.now()}_${file.name}`;
-                    const newUrl = await common.uploadImage(file, uniqueName);
+                    const newUrl = await common.uploadAndReplaceImage(file, null, 'header');
                     currentImages.push(newUrl);
                     showToast(`✅ تم رفع الصورة ${i+1}`, 'success', true);
                 } catch (err) {
@@ -1681,7 +1665,6 @@
                     common.logAdminError(err, 'headerImageUpload');
                 }
             }
-
             document.getElementById('headerImagesInput').value = currentImages.join('\n');
             changedTables.add('settings');
             await saveToSupabaseAdmin();
@@ -1768,4 +1751,4 @@
         });
     </script>
 </body>
-    </html>
+</html>
