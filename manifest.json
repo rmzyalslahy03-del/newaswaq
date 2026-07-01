@@ -6,49 +6,49 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0f172a",
-  "theme_color": "#fbbf24",
+  "background_color": "#F97316",
+  "theme_color": "#F97316",
   "lang": "ar",
   "dir": "rtl",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-72.png",
       "sizes": "72x72",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-96.png",
       "sizes": "96x96",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-128.png",
       "sizes": "128x128",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-144.png",
       "sizes": "144x144",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-152.png",
       "sizes": "152x152",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-384.png",
       "sizes": "384x384",
       "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/263/263142.png",
+      "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
