@@ -1,41 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <!-- ظلال أرضية -->
-  <ellipse cx="42" cy="85" rx="16" ry="2.5" fill="rgba(0,0,0,0.1)" />
-  <ellipse cx="65" cy="83" rx="22" ry="2.5" fill="rgba(0,0,0,0.12)" />
+  <ellipse cx="40" cy="80" rx="18" ry="2" fill="rgba(0,0,0,0.1)" />
+  <ellipse cx="68" cy="80" rx="28" ry="2.5" fill="rgba(0,0,0,0.12)" />
 
-  <!-- الحقيبة الخلفية (عمودية، زرقاء، على اليسار) -->
+  <!-- الحقيبة الخلفية (زرقاء - عمودية) -->
   <g>
-    <!-- جسم عمودي طويل -->
-    <rect x="22" y="12" width="34" height="68" rx="3" ry="3" fill="#1E88E5" />
+    <!-- جسم الحقيبة -->
+    <rect x="20" y="18" width="32" height="62" rx="3" ry="3" fill="#1E88E5" />
     <!-- طي الورق العلوي -->
-    <rect x="22" y="12" width="34" height="7" fill="#1565C0" rx="2" />
-    <line x1="22" y1="19" x2="56" y2="19" stroke="#0D47A1" stroke-width="1.5" />
-    <!-- شريط زخرفي أحمر -->
-    <rect x="22" y="42" width="34" height="5" fill="#E63946" opacity="0.9" />
+    <rect x="20" y="18" width="32" height="6" fill="#1565C0" rx="2" />
+    <line x1="20" y1="24" x2="52" y2="24" stroke="#0D47A1" stroke-width="1.5" />
+    <!-- شريط تزييني أحمر -->
+    <rect x="20" y="48" width="32" height="4" fill="#E63946" opacity="0.9" />
   </g>
-  <!-- مقابض الحقيبة العمودية -->
-  <path d="M27 12 C27 -4, 41 -4, 41 12" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
-  <path d="M37 12 C37 -4, 51 -4, 51 12" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+  <!-- مقابض الحقيبة الخلفية -->
+  <path d="M25 18 C25 4, 33 4, 33 18" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M39 18 C39 4, 47 4, 47 18" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
 
-  <!-- الحقيبة الأمامية (أفقية، برتقالية، على اليمين) -->
+  <!-- الحقيبة الأمامية (برتقالية - أفقية) -->
   <g>
-    <!-- جسم أفقي عريض وقصير -->
-    <rect x="44" y="38" width="48" height="38" rx="3" ry="3" fill="#FF7043" />
+    <!-- جسم الحقيبة -->
+    <rect x="38" y="38" width="54" height="40" rx="3" ry="3" fill="#FF7043" />
     <!-- طي الورق العلوي -->
-    <rect x="44" y="38" width="48" height="7" fill="#F4511E" rx="2" />
-    <line x1="44" y1="45" x2="92" y2="45" stroke="#BF360C" stroke-width="1.5" />
-    <!-- شريط زخرفي أصفر -->
-    <rect x="44" y="58" width="48" height="5" fill="#FFCA28" opacity="0.9" />
+    <rect x="38" y="38" width="54" height="6" fill="#F4511E" rx="2" />
+    <line x1="38" y1="44" x2="92" y2="44" stroke="#BF360C" stroke-width="1.5" />
+    <!-- شريط تزييني أصفر -->
+    <rect x="38" y="60" width="54" height="4" fill="#FFCA28" opacity="0.9" />
   </g>
-  <!-- مقابض الحقيبة الأفقية -->
-  <path d="M49 38 C49 22, 61 22, 61 38" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
-  <path d="M70 38 C70 22, 82 22, 82 38" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+  <!-- مقابض الحقيبة الأمامية -->
+  <path d="M44 38 C44 24, 57 24, 57 38" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M64 38 C64 24, 77 24, 77 38" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
 
-  <!-- إيصال ورقي يخرج من الحقيبة الأفقية -->
-  <g transform="translate(72, 46) rotate(14)">
-    <rect x="0" y="0" width="5.5" height="12" fill="#FFFFFF" stroke="#BDC3C7" stroke-width="0.5" />
-    <line x1="1" y1="3" x2="4.5" y2="3" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
-    <line x1="1" y1="6" x2="4" y2="6" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
-    <line x1="1" y1="9" x2="3.5" y2="9" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
+  <!-- إيصال ورقي صغير -->
+  <g transform="translate(76, 48) rotate(15)">
+    <rect x="0" y="0" width="5" height="11" fill="#FFFFFF" stroke="#D5D8DC" stroke-width="0.5" />
+    <line x1="1" y1="3" x2="4" y2="3" stroke="#BDC3C7" stroke-width="0.7" />
+    <line x1="1" y1="6" x2="3.5" y2="6" stroke="#BDC3C7" stroke-width="0.7" />
   </g>
 </svg>
