@@ -1,41 +1,29 @@
+أيقونة 
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <!-- ظلال أرضية -->
-  <ellipse cx="50" cy="78" rx="24" ry="2.5" fill="rgba(0,0,0,0.1)" />
-  <ellipse cx="50" cy="80" rx="20" ry="2" fill="rgba(0,0,0,0.15)" />
-
-  <!-- الحقيبة الخلفية (زرقاء، متوسطة الحجم) -->
-  <g>
-    <!-- جسم الحقيبة -->
-    <rect x="28" y="20" width="44" height="56" rx="3" ry="3" fill="#00ACC1" />
-    <!-- طي الورق العلوي -->
-    <rect x="28" y="20" width="44" height="6" fill="#0097A7" rx="2" />
-    <line x1="28" y1="26" x2="72" y2="26" stroke="#006064" stroke-width="1.5" />
-    <!-- شريط زخرفي -->
-    <rect x="28" y="44" width="44" height="4" fill="#FFC107" opacity="0.8" />
+  <!-- الكيس الخلفي (أغمق، أطول) -->
+  <g fill="#8B5A2B">
+    <!-- جسم الكيس الخلفي -->
+    <rect x="25" y="20" width="40" height="55" rx="3" ry="3" />
+    <!-- خط طي أعلى الكيس الخلفي -->
+    <line x1="25" y1="35" x2="65" y2="35" stroke="#6B4226" stroke-width="2" />
   </g>
-  <!-- مقابض الحقيبة الخلفية -->
-  <path d="M33 20 C33 6, 47 6, 47 20" fill="none" stroke="#006064" stroke-width="3.5" stroke-linecap="round" />
-  <path d="M53 20 C53 6, 67 6, 67 20" fill="none" stroke="#006064" stroke-width="3.5" stroke-linecap="round" />
+  <!-- مقابض الكيس الخلفي -->
+  <path d="M30 20 C30 8, 45 8, 45 20" fill="none" stroke="#6B4226" stroke-width="3" stroke-linecap="round" />
+  <path d="M50 20 C50 8, 65 8, 65 20" fill="none" stroke="#6B4226" stroke-width="3" stroke-linecap="round" />
 
-  <!-- الحقيبة الأمامية (حمراء، أصغر قليلاً) -->
-  <g>
-    <!-- جسم الحقيبة -->
-    <rect x="31" y="38" width="38" height="44" rx="3" ry="3" fill="#FF5252" />
-    <!-- طي الورق العلوي -->
-    <rect x="31" y="38" width="38" height="6" fill="#E53935" rx="2" />
-    <line x1="31" y1="44" x2="69" y2="44" stroke="#B71C1C" stroke-width="1.5" />
-    <!-- شريط زخرفي -->
-    <rect x="31" y="58" width="38" height="4" fill="#FFAB00" opacity="0.8" />
+  <!-- الكيس الأمامي (أفتح، أقصر) -->
+  <g fill="#CD853F">
+    <!-- جسم الكيس الأمامي -->
+    <rect x="20" y="45" width="35" height="45" rx="3" ry="3" />
+    <!-- خط طي أعلى الكيس الأمامي -->
+    <line x1="20" y1="60" x2="55" y2="60" stroke="#8B5A2B" stroke-width="2" />
   </g>
-  <!-- مقابض الحقيبة الأمامية -->
-  <path d="M36 38 C36 24, 48 24, 48 38" fill="none" stroke="#B71C1C" stroke-width="3.5" stroke-linecap="round" />
-  <path d="M53 38 C53 24, 65 24, 65 38" fill="none" stroke="#B71C1C" stroke-width="3.5" stroke-linecap="round" />
+  <!-- مقابض الكيس الأمامي -->
+  <path d="M25 45 C25 33, 37 33, 37 45" fill="none" stroke="#8B5A2B" stroke-width="3" stroke-linecap="round" />
+  <path d="M40 45 C40 33, 52 33, 52 45" fill="none" stroke="#8B5A2B" stroke-width="3" stroke-linecap="round" />
 
-  <!-- إيصال ورقي يخرج من الحقيبة الأمامية -->
-  <g transform="translate(58, 46) rotate(14)">
-    <rect x="0" y="0" width="5.5" height="12" fill="#FFFFFF" stroke="#BDC3C7" stroke-width="0.5" />
-    <line x1="1" y1="3" x2="4.5" y2="3" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
-    <line x1="1" y1="6" x2="4" y2="6" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
-    <line x1="1" y1="9" x2="3.5" y2="9" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
-  </g>
+  <!-- إيصال ورقي يخرج من الكيس الأمامي -->
+  <rect x="48" y="52" width="5" height="12" fill="white" stroke="#ccc" stroke-width="0.5" transform="rotate(10 48 52)" />
+  <line x1="49" y1="55" x2="52" y2="55" stroke="#ccc" stroke-width="0.5" transform="rotate(10 48 52)" />
+  <line x1="49" y1="58" x2="51" y2="58" stroke="#ccc" stroke-width="0.5" transform="rotate(10 48 52)" />
 </svg>
