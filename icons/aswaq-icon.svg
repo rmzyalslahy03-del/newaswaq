@@ -1,16 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <!-- حقيبة التسوق بنكهة أسواق الرياض -->
-  <g>
-    <!-- جسم الكيس -->
-    <path d="M25 35 L25 80 Q25 90 35 90 L65 90 Q75 90 75 80 L75 35 Z" fill="#C88B5E" />
-    <!-- طية الورق العلوية -->
-    <path d="M20 35 L80 35 Q85 35 85 30 L85 22 Q85 17 80 17 L20 17 Q15 17 15 22 L15 30 Q15 35 20 35 Z" fill="#C88B5E" />
-    <!-- أذرع الحبل -->
-    <path d="M30 17 C30 5 42 10 44 17" fill="none" stroke="#F49B9B" stroke-width="4" stroke-linecap="round" />
-    <path d="M70 17 C70 5 58 10 56 17" fill="none" stroke="#F49B9B" stroke-width="4" stroke-linecap="round" />
-    <!-- ربطة العنق (الفيونكة) -->
-    <path d="M47 20 C41 10 34 16 38 22 C41 24 44 22 47 20" fill="#F49B9B" />
-    <path d="M53 20 C59 10 66 16 62 22 C59 24 56 22 53 20" fill="#F49B9B" />
-    <circle cx="50" cy="18" r="3.5" fill="#F49B9B" />
-  </g>
+  <!-- Задняя сумка (розовая/оранжевая) -->
+  <path d="M25 60 L25 30 Q25 20 35 20 L38 20 L42 12 L48 12 L52 20 L55 20 Q65 20 65 30 L65 60 Q65 70 55 70 L35 70 Q25 70 25 60 Z" fill="#F5A623" />
+  <!-- Ручки задней сумки -->
+  <path d="M42 12 Q30 5 35 20" fill="none" stroke="#D98A1A" stroke-width="3" stroke-linecap="round" />
+  <path d="M48 12 Q60 5 55 20" fill="none" stroke="#D98A1A" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Передняя сумка (голубая) -->
+  <path d="M35 70 L35 45 Q35 35 45 35 L48 35 L50 28 L55 28 L57 35 L60 35 Q70 35 70 45 L70 70 Q70 80 60 80 L45 80 Q35 80 35 70 Z" fill="#4A90E2" />
+  <!-- Ручки передней сумки -->
+  <path d="M50 28 Q40 22 45 35" fill="none" stroke="#357ABD" stroke-width="3" stroke-linecap="round" />
+  <path d="M55 28 Q65 22 60 35" fill="none" stroke="#357ABD" stroke-width="3" stroke-linecap="round" />
+
+  <!-- Складки/детали на передней сумке -->
+  <line x1="45" y1="50" x2="45" y2="75" stroke="#357ABD" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="60" y1="50" x2="60" y2="75" stroke="#357ABD" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="52.5" y1="40" x2="52.5" y2="78" stroke="#357ABD" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="2 2" opacity="0.6"/>
 </svg>
