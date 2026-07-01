@@ -19,24 +19,26 @@
   <circle cx="256" cy="256" r="248" fill="url(#bgGrad)" stroke="url(#blueGrad)" stroke-width="14" filter="url(#shadow)" />
 
   <!-- ====== الكيس الأول (أزرق داكن) ====== -->
-  <g transform="translate(185, 230)">
-    <!-- مقبض الكيس -->
-    <path d="M-20,-40 C-20,-70 20,-70 20,-40" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
+  <g transform="translate(180, 230)">
+    <!-- مقبضي الكيس -->
+    <path d="M-18,-45 C-18,-65 -8,-65 -8,-45" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round" />
+    <path d="M8,-45 C8,-65 18,-65 18,-45" fill="none" stroke="#0f172a" stroke-width="6" stroke-linecap="round" />
     <!-- جسم الكيس -->
-    <rect x="-30" y="-30" width="60" height="75" rx="12" fill="#0f172a" />
+    <path d="M-30,-45 L30,-45 L30,25 Q30,40 15,40 L-15,40 Q-30,40 -30,25 Z" fill="#0f172a" />
     <!-- حرف SR -->
-    <text x="0" y="15" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="22"
+    <text x="0" y="5" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="24"
           fill="#f97316" text-anchor="middle" alignment-baseline="middle">SR</text>
   </g>
 
   <!-- ====== الكيس الثاني (برتقالي) ====== -->
-  <g transform="translate(327, 230)">
-    <!-- مقبض الكيس -->
-    <path d="M-20,-40 C-20,-70 20,-70 20,-40" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+  <g transform="translate(332, 230)">
+    <!-- مقبضي الكيس -->
+    <path d="M-18,-45 C-18,-65 -8,-65 -8,-45" fill="none" stroke="#f97316" stroke-width="6" stroke-linecap="round" />
+    <path d="M8,-45 C8,-65 18,-65 18,-45" fill="none" stroke="#f97316" stroke-width="6" stroke-linecap="round" />
     <!-- جسم الكيس -->
-    <rect x="-30" y="-30" width="60" height="75" rx="12" fill="#f97316" />
+    <path d="M-30,-45 L30,-45 L30,25 Q30,40 15,40 L-15,40 Q-30,40 -30,25 Z" fill="#f97316" />
     <!-- حرف SR -->
-    <text x="0" y="15" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="22"
+    <text x="0" y="5" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="24"
           fill="#0f172a" text-anchor="middle" alignment-baseline="middle">SR</text>
   </g>
 
