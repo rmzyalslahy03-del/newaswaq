@@ -19,26 +19,26 @@
   <circle cx="256" cy="256" r="248" fill="url(#glassBg)" stroke="url(#glassStroke)" stroke-width="14" filter="url(#shadow)" />
 
   <!-- ====== الكيس الأول (أزرق داكن) ====== -->
-  <g transform="translate(175, 220)">
+  <g transform="translate(226, 220)">
     <!-- مقبضي الكيس -->
     <path d="M-22,-50 C-22,-75 -12,-75 -12,-50" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
     <path d="M12,-50 C12,-75 22,-75 22,-50" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
     <!-- جسم الكيس -->
     <path d="M-35,-50 L35,-50 L35,35 Q35,55 15,55 L-15,55 Q-35,55 -35,35 Z" fill="#0f172a" />
-    <!-- حرف SR -->
-    <text x="0" y="8" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
-          fill="#f97316" text-anchor="middle" alignment-baseline="middle">SR</text>
+    <!-- اختصار العلامة التجارية AR -->
+    <text x="0" y="-7.5" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
+          fill="#f97316" text-anchor="middle" alignment-baseline="middle">AR</text>
   </g>
 
   <!-- ====== الكيس الثاني (برتقالي) ====== -->
-  <g transform="translate(337, 220)">
+  <g transform="translate(286, 220)">
     <!-- مقبضي الكيس -->
     <path d="M-22,-50 C-22,-75 -12,-75 -12,-50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
     <path d="M12,-50 C12,-75 22,-75 22,-50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
     <!-- جسم الكيس -->
     <path d="M-35,-50 L35,-50 L35,35 Q35,55 15,55 L-15,55 Q-35,55 -35,35 Z" fill="#f97316" />
-    <!-- حرف SR -->
-    <text x="0" y="8" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
-          fill="#0f172a" text-anchor="middle" alignment-baseline="middle">SR</text>
+    <!-- اختصار العلامة التجارية AR -->
+    <text x="0" y="-7.5" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
+          fill="#0f172a" text-anchor="middle" alignment-baseline="middle">AR</text>
   </g>
 </svg>
