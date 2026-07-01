@@ -6,52 +6,18 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#F97316",
-  "theme_color": "#F97316",
+  "background_color": "#0f172a",
+  "theme_color": "#fbbf24",
   "lang": "ar",
   "dir": "rtl",
   "icons": [
-    {
-      "src": "https://img.icons8.com/fluency/72/shopping-cart.png",
-      "sizes": "72x72",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/96/shopping-cart.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/128/shopping-cart.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/144/shopping-cart.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/152/shopping-cart.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/192/shopping-cart.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/384/shopping-cart.png",
-      "sizes": "384x384",
-      "type": "image/png"
-    },
-    {
-      "src": "https://img.icons8.com/fluency/512/shopping-cart.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
+    { "src": "https://img.icons8.com/color/72/shopping-cart--v1.png", "sizes": "72x72", "type": "image/png" },
+    { "src": "https://img.icons8.com/color/96/shopping-cart--v1.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "https://img.icons8.com/color/128/shopping-cart--v1.png", "sizes": "128x128", "type": "image/png" },
+    { "src": "https://img.icons8.com/color/144/shopping-cart--v1.png", "sizes": "144x144", "type": "image/png" },
+    { "src": "https://img.icons8.com/color/152/shopping-cart--v1.png", "sizes": "152x152", "type": "image/png" },
+    { "src": "https://img.icons8.com/color/192/shopping-cart--v1.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "https://img.icons8.com/color/384/shopping-cart--v1.png", "sizes": "384x384", "type": "image/png" },
+    { "src": "https://img.icons8.com/color/512/shopping-cart--v1.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ]
 }
