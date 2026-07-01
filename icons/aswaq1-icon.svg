@@ -1,23 +1,44 @@
-{
-  "name": "مجمع أسواق ريادة المستهلك",
-  "short_name": "أسواق الريادة",
-  "description": "جميع المتاجر والمنتجات تحت سقف واحد - تسوق بأفضل الأسعار",
-  "start_url": "/index.html",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "any",
-  "background_color": "#0f172a",
-  "theme_color": "#fbbf24",
-  "lang": "ar",
-  "dir": "rtl",
-  "icons": [
-    { "src": "/icons/icon-72.png", "sizes": "72x72", "type": "image/png" },
-    { "src": "/icons/icon-96.png", "sizes": "96x96", "type": "image/png" },
-    { "src": "/icons/icon-128.png", "sizes": "128x128", "type": "image/png" },
-    { "src": "/icons/icon-144.png", "sizes": "144x144", "type": "image/png" },
-    { "src": "/icons/icon-152.png", "sizes": "152x152", "type": "image/png" },
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "/icons/icon-384.png", "sizes": "384x384", "type": "image/png" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
-}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- خلفية زجاجية نصف شفافة -->
+    <radialGradient id="glassBg" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.25" />
+      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.05" />
+    </radialGradient>
+    <!-- إطار نصف شفاف -->
+    <linearGradient id="glassStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:0.4" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:0.2" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.2" />
+    </filter>
+  </defs>
+
+  <!-- خلفية دائرية زجاجية -->
+  <circle cx="256" cy="256" r="248" fill="url(#glassBg)" stroke="url(#glassStroke)" stroke-width="14" filter="url(#shadow)" />
+
+  <!-- ====== الكيس الأول (أزرق داكن) ====== -->
+  <g transform="translate(175, 220)">
+    <!-- مقبضي الكيس -->
+    <path d="M-22,-50 C-22,-75 -12,-75 -12,-50" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
+    <path d="M12,-50 C12,-75 22,-75 22,-50" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
+    <!-- جسم الكيس -->
+    <path d="M-35,-50 L35,-50 L35,35 Q35,55 15,55 L-15,55 Q-35,55 -35,35 Z" fill="#0f172a" />
+    <!-- حرف SR -->
+    <text x="0" y="8" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
+          fill="#f97316" text-anchor="middle" alignment-baseline="middle">SR</text>
+  </g>
+
+  <!-- ====== الكيس الثاني (برتقالي) ====== -->
+  <g transform="translate(337, 220)">
+    <!-- مقبضي الكيس -->
+    <path d="M-22,-50 C-22,-75 -12,-75 -12,-50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+    <path d="M12,-50 C12,-75 22,-75 22,-50" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+    <!-- جسم الكيس -->
+    <path d="M-35,-50 L35,-50 L35,35 Q35,55 15,55 L-15,55 Q-35,55 -35,35 Z" fill="#f97316" />
+    <!-- حرف SR -->
+    <text x="0" y="8" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
+          fill="#0f172a" text-anchor="middle" alignment-baseline="middle">SR</text>
+  </g>
+</svg>
