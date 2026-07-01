@@ -1,54 +1,41 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-  <defs>
-    <!-- خلفية زجاجية نصف شفافة -->
-    <radialGradient id="glassBg" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.25" />
-      <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0.05" />
-    </radialGradient>
-    <!-- إطار نصف شفاف -->
-    <linearGradient id="glassStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:0.4" />
-      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:0.2" />
-    </linearGradient>
-    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
-      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.2" />
-    </filter>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- ظلال أرضية -->
+  <ellipse cx="46" cy="84" rx="22" ry="2.5" fill="rgba(0,0,0,0.1)" />
+  <ellipse cx="62" cy="82" rx="20" ry="2.5" fill="rgba(0,0,0,0.12)" />
 
-  <!-- خلفية دائرية زجاجية -->
-  <circle cx="256" cy="256" r="248" fill="url(#glassBg)" stroke="url(#glassStroke)" stroke-width="14" filter="url(#shadow)" />
-
-  <!-- ====== الكيس الأول (بني) ====== -->
-  <g transform="translate(226, 220)">
-    <!-- مقابض الكيس (بيضاء) -->
-    <path d="M-22,-50 C-22,-75 -12,-75 -12,-50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
-    <path d="M12,-50 C12,-75 22,-75 22,-50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
-    <!-- جسم الكيس -->
-    <path d="M-35,-50 L35,-50 L35,35 Q35,55 15,55 L-15,55 Q-35,55 -35,35 Z" fill="#C49A6C" />
-    <!-- تفصيلة طي الورق العلوي -->
-    <rect x="-35" y="-50" width="70" height="6" fill="#B8925C" rx="2" />
-    <line x1="-35" y1="-44" x2="35" y2="-44" stroke="#A67B4A" stroke-width="1.5" />
-    <!-- شريط تزييني أحمر -->
-    <rect x="-35" y="0" width="70" height="4" fill="#E63946" opacity="0.9" />
-    <!-- اختصار العلامة التجارية AR -->
-    <text x="0" y="-7.5" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
-          fill="#FFFFFF" text-anchor="middle" alignment-baseline="middle">AR</text>
+  <!-- الحقيبة البنية (الخلفية، على اليسار) -->
+  <g>
+    <!-- جسم الحقيبة -->
+    <rect x="14" y="20" width="44" height="58" rx="3" ry="3" fill="#C49A6C" />
+    <!-- طي الورق العلوي -->
+    <rect x="14" y="20" width="44" height="7" fill="#B58B5A" rx="2" />
+    <line x1="14" y1="27" x2="58" y2="27" stroke="#A67B4A" stroke-width="1.5" />
+    <!-- شريط زخرفي (أحمر) -->
+    <rect x="14" y="48" width="44" height="4" fill="#E63946" opacity="0.9" />
   </g>
+  <!-- مقابض الحقيبة البنية -->
+  <path d="M19 20 C19 4, 34 4, 34 20" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+  <path d="M38 20 C38 4, 53 4, 53 20" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
 
-  <!-- ====== الكيس الثاني (بنفسجي) ====== -->
-  <g transform="translate(286, 220)">
-    <!-- مقابض الكيس (بيضاء) -->
-    <path d="M-22,-50 C-22,-75 -12,-75 -12,-50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
-    <path d="M12,-50 C12,-75 22,-75 22,-50" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" />
-    <!-- جسم الكيس -->
-    <path d="M-35,-50 L35,-50 L35,35 Q35,55 15,55 L-15,55 Q-35,55 -35,35 Z" fill="#9B59B6" />
-    <!-- تفصيلة طي الورق العلوي -->
-    <rect x="-35" y="-50" width="70" height="6" fill="#8E44AD" rx="2" />
-    <line x1="-35" y1="-44" x2="35" y2="-44" stroke="#7D3C98" stroke-width="1.5" />
-    <!-- شريط تزييني أصفر -->
-    <rect x="-35" y="0" width="70" height="4" fill="#F1C40F" opacity="0.9" />
-    <!-- اختصار العلامة التجارية AR -->
-    <text x="0" y="-7.5" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="28"
-          fill="#FFFFFF" text-anchor="middle" alignment-baseline="middle">AR</text>
+  <!-- الحقيبة البنفسجية (الأمامية، على اليمين) -->
+  <g>
+    <!-- جسم الحقيبة -->
+    <rect x="42" y="32" width="42" height="50" rx="3" ry="3" fill="#9B59B6" />
+    <!-- طي الورق العلوي -->
+    <rect x="42" y="32" width="42" height="7" fill="#8E44AD" rx="2" />
+    <line x1="42" y1="39" x2="84" y2="39" stroke="#7D3C98" stroke-width="1.5" />
+    <!-- شريط زخرفي (أصفر) -->
+    <rect x="42" y="56" width="42" height="4" fill="#F1C40F" opacity="0.9" />
+  </g>
+  <!-- مقابض الحقيبة البنفسجية -->
+  <path d="M47 32 C47 16, 60 16, 60 32" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+  <path d="M66 32 C66 16, 79 16, 79 32" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" />
+
+  <!-- إيصال ورقي يخرج من الحقيبة البنفسجية -->
+  <g transform="translate(70, 40) rotate(14)">
+    <rect x="0" y="0" width="5.5" height="12" fill="#FFFFFF" stroke="#BDC3C7" stroke-width="0.5" />
+    <line x1="1" y1="3" x2="4.5" y2="3" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
+    <line x1="1" y1="6" x2="4" y2="6" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
+    <line x1="1" y1="9" x2="3.5" y2="9" stroke="#95A5A6" stroke-width="0.7" stroke-linecap="round" />
   </g>
 </svg>
