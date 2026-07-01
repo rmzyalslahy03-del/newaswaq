@@ -1,39 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <!-- الكيس الخلفي (أخضر، على اليسار) -->
+  <!-- الحقيبة الزرقاء (الخلفية، على اليسار) -->
   <g>
-    <!-- جسم الكيس -->
-    <rect x="18" y="28" width="42" height="52" rx="3" ry="3" fill="#2ECC71" />
+    <!-- جسم الحقيبة -->
+    <rect x="18" y="28" width="42" height="52" rx="3" ry="3" fill="#2E86C1" />
     <!-- طي الورق العلوي -->
-    <rect x="18" y="28" width="42" height="6" fill="#27AE60" rx="2" />
+    <rect x="18" y="28" width="42" height="6" fill="#2471A3" rx="2" />
     <!-- تفصيلة خط الطي -->
-    <line x1="18" y1="34" x2="60" y2="34" stroke="#1E8449" stroke-width="1.5" />
-    <!-- شريط تزييني ذهبي -->
-    <rect x="18" y="52" width="42" height="4" fill="#F1C40F" opacity="0.9" />
-    <!-- ظل خفيف تحت الكيس -->
+    <line x1="18" y1="34" x2="60" y2="34" stroke="#1F618D" stroke-width="1.5" />
+    <!-- شريط تزييني -->
+    <rect x="18" y="52" width="42" height="4" fill="#F39C12" opacity="0.9" />
+    <!-- ظل خفيف تحت الحقيبة -->
     <ellipse cx="39" cy="82" rx="20" ry="2" fill="rgba(0,0,0,0.1)" />
   </g>
-  <!-- مقابض الكيس الأخضر -->
-  <path d="M23 28 C23 10, 39 10, 39 28" fill="none" stroke="#FDFEFE" stroke-width="3.5" stroke-linecap="round" />
-  <path d="M42 28 C42 10, 58 10, 58 28" fill="none" stroke="#FDFEFE" stroke-width="3.5" stroke-linecap="round" />
+  <!-- مقابض الحقيبة الزرقاء -->
+  <path d="M23 28 C23 10, 39 10, 39 28" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M42 28 C42 10, 58 10, 58 28" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
 
-  <!-- الكيس الأمامي (أزرق مخضر، على اليمين) -->
+  <!-- الحقيبة البرتقالية (الأمامية، على اليمين) -->
   <g>
-    <!-- جسم الكيس -->
-    <rect x="44" y="36" width="40" height="46" rx="3" ry="3" fill="#1ABC9C" />
+    <!-- جسم الحقيبة -->
+    <rect x="44" y="36" width="40" height="46" rx="3" ry="3" fill="#E67E22" />
     <!-- طي الورق العلوي -->
-    <rect x="44" y="36" width="40" height="6" fill="#16A085" rx="2" />
+    <rect x="44" y="36" width="40" height="6" fill="#D35400" rx="2" />
     <!-- تفصيلة خط الطي -->
-    <line x1="44" y1="42" x2="84" y2="42" stroke="#117A65" stroke-width="1.5" />
-    <!-- شريط تزييني برتقالي -->
-    <rect x="44" y="58" width="40" height="4" fill="#E67E22" opacity="0.9" />
-    <!-- ظل تحت الكيس -->
+    <line x1="44" y1="42" x2="84" y2="42" stroke="#BA4A00" stroke-width="1.5" />
+    <!-- شريط تزييني -->
+    <rect x="44" y="58" width="40" height="4" fill="#F1C40F" opacity="0.9" />
+    <!-- ظل تحت الحقيبة -->
     <ellipse cx="64" cy="84" rx="19" ry="2" fill="rgba(0,0,0,0.1)" />
   </g>
-  <!-- مقابض الكيس الأزرق المخضر -->
-  <path d="M49 36 C49 18, 64 18, 64 36" fill="none" stroke="#FDFEFE" stroke-width="3.5" stroke-linecap="round" />
-  <path d="M67 36 C67 18, 82 18, 82 36" fill="none" stroke="#FDFEFE" stroke-width="3.5" stroke-linecap="round" />
+  <!-- مقابض الحقيبة البرتقالية -->
+  <path d="M49 36 C49 18, 64 18, 64 36" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M67 36 C67 18, 82 18, 82 36" fill="none" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" />
 
-  <!-- إيصال ورقي صغير يخرج من الكيس الأمامي -->
+  <!-- إيصال ورقي صغير يخرج من الحقيبة البرتقالية -->
   <g transform="translate(68, 44) rotate(12)">
     <rect x="0" y="0" width="5" height="11" fill="#FFFFFF" stroke="#D5D8DC" stroke-width="0.5" />
     <line x1="1" y1="3" x2="4" y2="3" stroke="#BDC3C7" stroke-width="0.7" />
