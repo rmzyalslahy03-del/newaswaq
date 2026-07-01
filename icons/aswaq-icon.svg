@@ -1,23 +1,46 @@
-{
-  "name": "مجمع أسواق ريادة المستهلك",
-  "short_name": "أسواق الريادة",
-  "description": "جميع المتاجر والمنتجات تحت سقف واحد - تسوق بأفضل الأسعار",
-  "start_url": "/index.html",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "any",
-  "background_color": "#0f172a",
-  "theme_color": "#fbbf24",
-  "lang": "ar",
-  "dir": "rtl",
-  "icons": [
-    { "src": "https://img.icons8.com/color/72/shopping-cart--v1.png", "sizes": "72x72", "type": "image/png" },
-    { "src": "https://img.icons8.com/color/96/shopping-cart--v1.png", "sizes": "96x96", "type": "image/png" },
-    { "src": "https://img.icons8.com/color/128/shopping-cart--v1.png", "sizes": "128x128", "type": "image/png" },
-    { "src": "https://img.icons8.com/color/144/shopping-cart--v1.png", "sizes": "144x144", "type": "image/png" },
-    { "src": "https://img.icons8.com/color/152/shopping-cart--v1.png", "sizes": "152x152", "type": "image/png" },
-    { "src": "https://img.icons8.com/color/192/shopping-cart--v1.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "https://img.icons8.com/color/384/shopping-cart--v1.png", "sizes": "384x384", "type": "image/png" },
-    { "src": "https://img.icons8.com/color/512/shopping-cart--v1.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
-  ]
-}
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- خلفية برتقالية متدرجة -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#ea580c;stop-opacity:1" />
+    </linearGradient>
+    <!-- إطار أزرق داكن متدرج -->
+    <linearGradient id="blueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- خلفية دائرية -->
+  <circle cx="256" cy="256" r="248" fill="url(#bgGrad)" stroke="url(#blueGrad)" stroke-width="14" filter="url(#shadow)" />
+
+  <!-- ====== الكيس الأول (أزرق داكن) ====== -->
+  <g transform="translate(185, 230)">
+    <!-- مقبض الكيس -->
+    <path d="M-20,-40 C-20,-70 20,-70 20,-40" fill="none" stroke="#0f172a" stroke-width="8" stroke-linecap="round" />
+    <!-- جسم الكيس -->
+    <rect x="-30" y="-30" width="60" height="75" rx="12" fill="#0f172a" />
+    <!-- حرف SR -->
+    <text x="0" y="15" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="22"
+          fill="#f97316" text-anchor="middle" alignment-baseline="middle">SR</text>
+  </g>
+
+  <!-- ====== الكيس الثاني (برتقالي) ====== -->
+  <g transform="translate(327, 230)">
+    <!-- مقبض الكيس -->
+    <path d="M-20,-40 C-20,-70 20,-70 20,-40" fill="none" stroke="#f97316" stroke-width="8" stroke-linecap="round" />
+    <!-- جسم الكيس -->
+    <rect x="-30" y="-30" width="60" height="75" rx="12" fill="#f97316" />
+    <!-- حرف SR -->
+    <text x="0" y="15" font-family="Cairo, Arial, sans-serif" font-weight="700" font-size="22"
+          fill="#0f172a" text-anchor="middle" alignment-baseline="middle">SR</text>
+  </g>
+
+  <!-- اسم التطبيق أسفل الأيقونة -->
+  <text x="256" y="430" font-family="Cairo, Arial, sans-serif" font-weight="600" font-size="36"
+        fill="#0f172a" text-anchor="middle" alignment-baseline="middle">أسواق الريادة</text>
+</svg>
