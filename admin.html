@@ -51,6 +51,18 @@
         .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; display: inline-block; }
         .status-online { background: #10b981; color: white; }
         .status-offline { background: #ef4444; color: white; }
+        /* حقول التواصل الاجتماعي */
+        .social-field-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 5px 0; background: #0f172a; padding: 8px 12px; border-radius: 40px; }
+        .social-field-group i { width: 30px; color: #fbbf24; }
+        .social-field-group label { min-width: 80px; font-weight: 600; color: #e2e8f0; }
+        .social-field-group input[type="text"] { flex: 1; min-width: 150px; padding: 8px 15px; border-radius: 40px; border: none; background: #1e293b; color: white; }
+        .social-field-group label:last-child { display: flex; align-items: center; gap: 5px; color: #cbd5e1; min-width: auto; }
+        /* منطقة رفع العلم السعودي */
+        #saudiFlagDropZone { border: 2px dashed #fbbf24; border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; background: #1e293b; transition: 0.3s; margin-top:10px; }
+        #saudiFlagDropZone:hover { border-color: #10b981; background: #1e293b; }
+        #saudiFlagPreview { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin: 0 auto 10px; background: #0f172a; border: 3px solid #fbbf24; display: flex; align-items: center; justify-content: center; }
+        #saudiFlagPreview img { width: 100%; height: 100%; object-fit: cover; display: none; }
+        #saudiFlagPreview span { color: #94a3b8; font-size: 0.8rem; }
     </style>
 </head>
 <body>
@@ -99,7 +111,7 @@
                 <p style="font-size:12px; color:#94a3b8; margin-top:10px;">⚠️ الاستيراد سيزيل البيانات الحالية ويستبدلها بالملف المرفوع</p>
             </div>
 
-            <!-- نشر التحديثات -->
+            <!-- نشر التحديثات (تم الحفاظ عليه) -->
             <div class="admin-card">
                 <h2>نشر التحديثات</h2>
                 <button id="publishBtn" style="background:#10b981; color:white; border:none; padding:15px; border-radius:40px; font-weight:700; cursor:pointer; width:100%;">
@@ -108,7 +120,7 @@
                 <p style="margin-top:10px; color:#94a3b8;">سيتم حفظ جميع التغييرات في السحابة فوراً</p>
             </div>
 
-            <!-- الإعدادات العامة -->
+            <!-- الإعدادات العامة (مع رفع العلم) -->
             <div class="admin-card">
                 <h2>الإعدادات العامة</h2>
                 <div class="admin-form">
@@ -126,6 +138,21 @@
                         <option value="en">English</option>
                     </select>
                     <label><input type="checkbox" id="showSaudiFlagCheckbox"> عرض علم السعودية</label>
+                    
+                    <!-- رفع العلم السعودي (سحب وإفلات) -->
+                    <div style="border:1px solid #334155; border-radius:20px; padding:15px; margin-top:5px; background:#0f172a;">
+                        <label style="color:#fbbf24; font-weight:bold;">العلم السعودي (شعار دائري)</label>
+                        <div id="saudiFlagDropZone">
+                            <div id="saudiFlagPreview">
+                                <img id="saudiFlagImage" src="" alt="العلم السعودي">
+                                <span id="saudiFlagPlaceholder">اسحب الصورة هنا أو اضغط للاختيار</span>
+                            </div>
+                            <p style="color: #94a3b8; font-size: 0.8rem;">اسحب صورة العلم أو اضغط لاختيارها (يفضل مربعة)</p>
+                            <input type="file" id="saudiFlagFileInput" accept="image/*" style="display: none;">
+                            <button id="removeSaudiFlagBtn" style="background: #ef4444; color: white; border: none; padding: 5px 15px; border-radius: 40px; cursor: pointer; margin-top: 5px;">إزالة العلم</button>
+                        </div>
+                    </div>
+
                     <label><input type="checkbox" id="cartEnabledCheckbox"> تفعيل سلة التسوق</label>
                     <label><input type="checkbox" id="enableUserProfileCheckbox"> تفعيل صفحة المستخدم</label>
                     <h3>طرق إرسال الطلبات</h3>
@@ -388,17 +415,22 @@
                 <div class="admin-list" id="testimonialsList"></div>
             </div>
 
-            <!-- التذييل -->
+            <!-- التذييل (مع حقول منفصلة لوسائل التواصل) -->
             <div class="admin-card">
                 <h2>التذييل</h2>
                 <div class="admin-form">
                     <input type="email" id="footerEmail" placeholder="البريد الإلكتروني">
                     <input type="text" id="footerPhone" placeholder="الهاتف">
-                    <input type="url" id="footerWhatsapp" placeholder="رابط الواتساب">
-                    <label>روابط التواصل (أيقونة:رابط)</label>
-                    <textarea id="footerSocial" rows="3"></textarea>
-                    <label>طرق الدفع (أيقونات)</label>
-                    <input type="text" id="footerPayments" placeholder="fab fa-cc-visa, fab fa-cc-mastercard">
+                    <input type="text" id="footerWhatsapp" placeholder="رقم الواتساب (للطلبات)">
+
+                    <!-- قسم وسائل التواصل الاجتماعي -->
+                    <div style="border:1px solid #334155; padding:15px; border-radius:20px; margin:10px 0; background:#0f172a;">
+                        <h4 style="color:#fbbf24; margin-bottom:10px;">روابط حسابات التواصل الاجتماعي</h4>
+                        <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:10px;">أدخل الرابط الكامل لكل منصة، واختر إظهار أو إخفاء الأيقونة في التذييل.</p>
+                        <div id="socialFieldsContainer"></div>
+                    </div>
+
+                    <input type="text" id="footerPayments" placeholder="طرق الدفع (أيقونات مفصولة بفاصلة)">
                     <button id="saveFooterBtn">حفظ</button>
                 </div>
             </div>
@@ -448,6 +480,7 @@
         let changedTables = new Set();
         let isSaving = false;
 
+        // ============= دوال عرض وإخفاء الرسائل =============
         function showSpinner(show) {
             const badge = document.getElementById('autoSaveBadge');
             if (show) {
@@ -475,25 +508,39 @@
             }
         }
 
-        async function saveToSupabaseAdmin() {
+        // ============= حفظ البيانات إلى Supabase (مع الحفاظ على الأزرار) =============
+        async function saveToSupabaseAdmin(tables = null) {
+            const tablesToSave = tables || Array.from(changedTables);
             if (!appData || isSaving) return;
-            if (changedTables.size === 0) return;
+            if (tablesToSave.length === 0) return;
+
             isSaving = true;
             showSpinner(true);
+
+            const timeoutId = setTimeout(() => {
+                if (isSaving) {
+                    showSpinner(false);
+                    isSaving = false;
+                    showToast("⚠️ انتهت مهلة الحفظ، حاول مرة أخرى", 'error', true);
+                }
+            }, 10000);
+
             try {
-                await common.saveAppData(true);
-                changedTables.clear();
-                showToast("✅ تم حفظ جميع التغييرات ومزامنتها", 'success', true);
+                await common.saveAppData(true, tablesToSave);
+                tablesToSave.forEach(table => changedTables.delete(table));
+                showToast("✅ تم حفظ التغييرات ومزامنتها", 'success', true);
             } catch (err) {
                 console.error("خطأ في الحفظ:", err);
                 showToast("❌ خطأ في الحفظ: " + err.message, 'error', true);
                 common.logAdminError(err, 'saveToSupabaseAdmin');
             } finally {
-                isSaving = false;
+                clearTimeout(timeoutId);
                 showSpinner(false);
+                isSaving = false;
             }
         }
 
+        // ============= دوال مساعدة =============
         function findStoreById(storeId) {
             if (!appData) return null;
             for (let cat in appData.stores) {
@@ -503,6 +550,7 @@
             return null;
         }
 
+        // ============= رفع الصور =============
         function setupImageUpload(fileInputId, targetInputId, folder, getOldUrl = null) {
             document.getElementById(fileInputId).addEventListener('change', async (e) => {
                 const file = e.target.files[0];
@@ -518,7 +566,7 @@
                     document.getElementById(targetInputId).value = newUrl;
                     showToast('✅ تم رفع الصورة وحذف القديمة', 'success', true);
                     changedTables.add('settings');
-                    await saveToSupabaseAdmin();
+                    await saveToSupabaseAdmin(['settings']);
                 } catch (err) {
                     showToast('❌ فشل رفع الصورة: ' + err.message, 'error', true);
                     common.logAdminError(err, 'uploadImage');
@@ -527,6 +575,174 @@
             });
         }
 
+        // ============= رفع العلم السعودي (سحب وإفلات) =============
+        function setupSaudiFlagUpload() {
+            const dropZone = document.getElementById('saudiFlagDropZone');
+            const fileInput = document.getElementById('saudiFlagFileInput');
+            const flagImage = document.getElementById('saudiFlagImage');
+            const placeholder = document.getElementById('saudiFlagPlaceholder');
+            const removeBtn = document.getElementById('removeSaudiFlagBtn');
+
+            function updateFlagPreview(url) {
+                if (url) {
+                    flagImage.src = url;
+                    flagImage.style.display = 'block';
+                    placeholder.style.display = 'none';
+                } else {
+                    flagImage.style.display = 'none';
+                    placeholder.style.display = 'block';
+                }
+            }
+
+            const currentUrl = appData?.settings?.saudiFlagUrl || '';
+            updateFlagPreview(currentUrl);
+
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            dropZone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#10b981';
+                dropZone.style.background = '#1e293b';
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.style.borderColor = '#fbbf24';
+                dropZone.style.background = '#1e293b';
+            });
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dropZone.style.borderColor = '#fbbf24';
+                dropZone.style.background = '#1e293b';
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleSaudiFlagFile(files[0]);
+                }
+            });
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleSaudiFlagFile(e.target.files[0]);
+                }
+            });
+
+            async function handleSaudiFlagFile(file) {
+                if (!file) return;
+                try {
+                    showSpinner(true);
+                    const oldUrl = appData?.settings?.saudiFlagUrl || null;
+                    const newUrl = await common.uploadAndReplaceImage(file, oldUrl, 'flags');
+                    if (!appData.settings) appData.settings = {};
+                    appData.settings.saudiFlagUrl = newUrl;
+                    changedTables.add('settings');
+                    await saveToSupabaseAdmin(['settings']);
+                    updateFlagPreview(newUrl);
+                    showToast('✅ تم رفع العلم بنجاح', 'success', true);
+                } catch (err) {
+                    showToast('❌ فشل رفع العلم: ' + err.message, 'error', true);
+                    common.logAdminError(err, 'uploadSaudiFlag');
+                } finally {
+                    showSpinner(false);
+                    fileInput.value = '';
+                }
+            }
+
+            removeBtn.addEventListener('click', async () => {
+                if (confirm('هل أنت متأكد من إزالة العلم؟')) {
+                    try {
+                        const oldUrl = appData?.settings?.saudiFlagUrl;
+                        if (oldUrl) {
+                            await common.deleteImage(oldUrl);
+                        }
+                        appData.settings.saudiFlagUrl = '';
+                        changedTables.add('settings');
+                        await saveToSupabaseAdmin(['settings']);
+                        updateFlagPreview('');
+                        showToast('تم إزالة العلم', 'success', true);
+                    } catch (err) {
+                        showToast('❌ فشل الإزالة: ' + err.message, 'error', true);
+                        common.logAdminError(err, 'removeSaudiFlag');
+                    }
+                }
+            });
+        }
+
+        // ============= توليد حقول وسائل التواصل =============
+        function renderSocialFields() {
+            const container = document.getElementById('socialFieldsContainer');
+            if (!container) return;
+            const platforms = [
+                { id: 'whatsapp', label: 'واتساب', icon: 'fab fa-whatsapp' },
+                { id: 'facebook', label: 'فيسبوك', icon: 'fab fa-facebook-f' },
+                { id: 'twitter', label: 'إكس (تويتر)', icon: 'fab fa-twitter' },
+                { id: 'instagram', label: 'إنستغرام', icon: 'fab fa-instagram' },
+                { id: 'telegram', label: 'تلغرام', icon: 'fab fa-telegram-plane' },
+                { id: 'snapchat', label: 'سناب شات', icon: 'fab fa-snapchat-ghost' },
+                { id: 'linkedin', label: 'لينكدإن', icon: 'fab fa-linkedin-in' },
+                { id: 'tiktok', label: 'تيك توك', icon: 'fab fa-tiktok' }
+            ];
+            let html = '';
+            platforms.forEach(p => {
+                const urlId = `social_${p.id}_url`;
+                const activeId = `social_${p.id}_active`;
+                html += `
+                    <div class="social-field-group">
+                        <i class="${p.icon}"></i>
+                        <label>${p.label}</label>
+                        <input type="text" id="${urlId}" placeholder="رابط ${p.label}" value="">
+                        <label>
+                            <input type="checkbox" id="${activeId}" checked> عرض
+                        </label>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // ============= دوال ملء الحقول من البيانات =============
+        function populateGeneralSettings() {
+            if (!appData) return;
+            document.getElementById('currencySelect').value = appData.settings.currency;
+            document.getElementById('languageSelect').value = appData.settings.language;
+            document.getElementById('showSaudiFlagCheckbox').checked = appData.settings.showSaudiFlag;
+            document.getElementById('cartEnabledCheckbox').checked = appData.settings.cartEnabled;
+            document.getElementById('enableUserProfileCheckbox').checked = appData.settings.enableUserProfile;
+            document.getElementById('orderWhatsappCheckbox').checked = appData.settings.orderMethods.whatsapp;
+            document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods.email;
+            document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods.chat;
+            document.getElementById('contactEmail').value = appData.settings.contactEmail || '';
+            document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || (window.DEFAULT_WHATSAPP_NUMBER || '967778562099');
+            document.getElementById('trustBadgesInput').value = (appData.settings.trustBadges || []).join('\n');
+            
+            // تحديث معاينة العلم
+            const flagImage = document.getElementById('saudiFlagImage');
+            const placeholder = document.getElementById('saudiFlagPlaceholder');
+            const url = appData.settings?.saudiFlagUrl || '';
+            if (url) {
+                flagImage.src = url;
+                flagImage.style.display = 'block';
+                placeholder.style.display = 'none';
+            } else {
+                flagImage.style.display = 'none';
+                placeholder.style.display = 'block';
+            }
+        }
+
+        function populateFooterSettings() {
+            if (!appData) return;
+            document.getElementById('footerEmail').value = appData.footer.email || '';
+            document.getElementById('footerPhone').value = appData.footer.phone || '';
+            document.getElementById('footerWhatsapp').value = appData.footer.whatsapp || '';
+            document.getElementById('footerPayments').value = (appData.footer.payments || []).join(', ');
+
+            const socialMedia = appData.footer.socialMedia || [];
+            const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
+            platforms.forEach(p => {
+                const item = socialMedia.find(s => s.platform === p);
+                document.getElementById(`social_${p}_url`).value = item ? item.url : '';
+                document.getElementById(`social_${p}_active`).checked = item ? item.active : true;
+            });
+        }
+
+        // ============= دوال عرض القوائم =============
         function refreshAllLists() {
             if (!appData) return;
             populateCategoriesList();
@@ -549,6 +765,7 @@
             renderAdminErrors();
         }
 
+        // ============= باقي دوال populate (كما هي، ولكن مع استدعاء saveToSupabaseAdmin مع الجداول) =============
         function populateCategorySelects() {
             const selects = ['storeCategorySelect', 'productCategorySelect', 'storePermissionSelect'];
             selects.forEach(selId => {
@@ -695,21 +912,6 @@
             ).join('');
         }
 
-        function populateGeneralSettings() {
-            if (!appData) return;
-            document.getElementById('currencySelect').value = appData.settings.currency;
-            document.getElementById('languageSelect').value = appData.settings.language;
-            document.getElementById('showSaudiFlagCheckbox').checked = appData.settings.showSaudiFlag;
-            document.getElementById('cartEnabledCheckbox').checked = appData.settings.cartEnabled;
-            document.getElementById('enableUserProfileCheckbox').checked = appData.settings.enableUserProfile;
-            document.getElementById('orderWhatsappCheckbox').checked = appData.settings.orderMethods.whatsapp;
-            document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods.email;
-            document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods.chat;
-            document.getElementById('contactEmail').value = appData.settings.contactEmail || '';
-            document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || (window.DEFAULT_WHATSAPP_NUMBER || '967778562099');
-            document.getElementById('trustBadgesInput').value = (appData.settings.trustBadges || []).join('\n');
-        }
-
         function populateDesignSettings() {
             if (!appData) return;
             document.getElementById('categoryBg').value = appData.design.categoryBg;
@@ -739,16 +941,6 @@
             document.getElementById('tickerTextsInput').value = (appData.ticker || []).join('\n');
         }
 
-        function populateFooterSettings() {
-            if (!appData) return;
-            document.getElementById('footerEmail').value = appData.footer.email;
-            document.getElementById('footerPhone').value = appData.footer.phone;
-            document.getElementById('footerWhatsapp').value = appData.footer.whatsapp;
-            const socialText = appData.footer.social.map(s => `${s.icon}:${s.url}`).join(', ');
-            document.getElementById('footerSocial').value = socialText;
-            document.getElementById('footerPayments').value = (appData.footer.payments || []).join(', ');
-        }
-
         function populateStorePermissions() {
             const catSelect = document.getElementById('storePermissionSelect');
             const storeSelect = document.getElementById('storePermissionStoreSelect');
@@ -774,7 +966,7 @@
             document.getElementById('aboutVision').value = about.vision || '';
         }
 
-        // ============= دوال إعلانات المتاجر (Banners) =============
+        // ============= إعلانات المتاجر (Banners) =============
         function populateBannerStoreSelect() {
             const select = document.getElementById('bannerStoreSelect');
             if (!select) return;
@@ -845,7 +1037,7 @@
             if (!store) return;
             store.banners = (store.banners || []).filter(b => b.id !== bannerId);
             changedTables.add('stores');
-            saveToSupabaseAdmin();
+            saveToSupabaseAdmin(['stores']);
             refreshBannerList(storeId);
             showToast('تم حذف الإعلان', 'success', true);
         }
@@ -883,7 +1075,7 @@
             if (!store.banners) store.banners = [];
             store.banners.push(newBanner);
             changedTables.add('stores');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['stores']);
             refreshBannerList(storeId);
             document.getElementById('bannerForm').reset();
             document.getElementById('addBannerBtn').style.display = 'block';
@@ -915,7 +1107,7 @@
             }
             
             changedTables.add('stores');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['stores']);
             refreshBannerList(storeId);
             document.getElementById('bannerForm').reset();
             document.getElementById('addBannerBtn').style.display = 'block';
@@ -932,7 +1124,7 @@
             document.getElementById('bannerImagesGroup').style.display = isText ? 'none' : 'block';
         });
 
-        // ================== باقي دوال CRUD (فئات، متاجر، منتجات...) ==================
+        // ================== دوال CRUD للفئات والمتاجر والمنتجات ==================
         window.editCategory = function(id) {
             if (!appData) return;
             const cat = appData.categories.find(c => c.id === id);
@@ -964,7 +1156,7 @@
                     changedTables.add('categories');
                     changedTables.add('stores');
                     changedTables.add('products');
-                    await saveToSupabaseAdmin();
+                    await saveToSupabaseAdmin(['categories', 'stores', 'products']);
                     refreshAllLists();
                     showToast('تم حذف الفئة بنجاح', 'success', true);
                 } catch (err) {
@@ -999,7 +1191,7 @@
             if (store) {
                 store.hidden = !store.hidden;
                 changedTables.add('stores');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['stores']);
                 refreshAllLists();
                 showToast(store.hidden ? 'تم إخفاء المتجر' : 'تم إظهار المتجر', 'success', true);
             }
@@ -1021,7 +1213,7 @@
                     }
                     changedTables.add('stores');
                     changedTables.add('products');
-                    await saveToSupabaseAdmin();
+                    await saveToSupabaseAdmin(['stores', 'products']);
                     refreshAllLists();
                     showToast('تم حذف المتجر', 'success', true);
                 } catch (err) {
@@ -1056,7 +1248,7 @@
                     if (index !== -1) {
                         appData.products[storeId].splice(index, 1);
                         changedTables.add('products');
-                        await saveToSupabaseAdmin();
+                        await saveToSupabaseAdmin(['products']);
                         refreshAllLists();
                         showToast('تم حذف المنتج', 'success', true);
                     }
@@ -1067,7 +1259,7 @@
             }
         };
 
-        // ================== أحداث الأزرار الأخرى (إضافة وتحديث) ==================
+        // ================== أحداث أزرار الإضافة والتحديث (مع تمرير الجداول) ==================
         document.getElementById('addCategoryBtn').addEventListener('click', async () => {
             const name = document.getElementById('categoryName').value;
             if (!name) return alert('اسم الفئة مطلوب');
@@ -1095,7 +1287,7 @@
                 appData.categories.push(newCat);
                 if (!appData.stores[newCat.name]) appData.stores[newCat.name] = [];
                 changedTables.add('categories');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['categories']);
                 refreshAllLists();
                 document.getElementById('categoryForm').reset();
                 document.getElementById('addCategoryBtn').style.display = 'block';
@@ -1135,7 +1327,7 @@
                     delete appData.stores[oldName];
                 }
                 changedTables.add('categories');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['categories']);
                 refreshAllLists();
                 document.getElementById('categoryForm').reset();
                 document.getElementById('addCategoryBtn').style.display = 'block';
@@ -1178,7 +1370,7 @@
                 appData.products[newId] = [];
                 changedTables.add('stores');
                 changedTables.add('products');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['stores', 'products']);
                 refreshAllLists();
                 document.getElementById('storeForm').reset();
                 document.getElementById('addStoreBtn').style.display = 'block';
@@ -1212,7 +1404,7 @@
                 if (error) throw error;
                 Object.assign(store, updatedStore);
                 changedTables.add('stores');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['stores']);
                 refreshAllLists();
                 document.getElementById('storeForm').reset();
                 document.getElementById('addStoreBtn').style.display = 'block';
@@ -1246,7 +1438,7 @@
                 if (!appData.products[storeId]) appData.products[storeId] = [];
                 appData.products[storeId].push(newProduct);
                 changedTables.add('products');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['products']);
                 refreshAllLists();
                 document.getElementById('productForm').reset();
                 document.getElementById('addProductBtn').style.display = 'block';
@@ -1275,7 +1467,7 @@
                 if (error) throw error;
                 Object.assign(product, updatedProduct);
                 changedTables.add('products');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['products']);
                 refreshAllLists();
                 document.getElementById('productForm').reset();
                 document.getElementById('addProductBtn').style.display = 'block';
@@ -1306,7 +1498,7 @@
                 if (!appData.carousel) appData.carousel = [];
                 appData.carousel.push(newAd);
                 changedTables.add('carousel');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['carousel']);
                 refreshAllLists();
                 document.getElementById('carouselForm').reset();
                 document.getElementById('addCarouselBtn').style.display = 'block';
@@ -1335,7 +1527,7 @@
                 if (error) throw error;
                 appData.carousel[index] = updatedAd;
                 changedTables.add('carousel');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['carousel']);
                 refreshAllLists();
                 document.getElementById('carouselForm').reset();
                 document.getElementById('addCarouselBtn').style.display = 'block';
@@ -1364,7 +1556,7 @@
                 if (error) throw error;
                 appData.testimonials.push(newTestimonial);
                 changedTables.add('testimonials');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['testimonials']);
                 refreshAllLists();
                 document.getElementById('testimonialForm').reset();
                 document.getElementById('addTestimonialBtn').style.display = 'block';
@@ -1392,7 +1584,7 @@
                 if (error) throw error;
                 appData.testimonials[index] = updatedTestimonial;
                 changedTables.add('testimonials');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['testimonials']);
                 refreshAllLists();
                 document.getElementById('testimonialForm').reset();
                 document.getElementById('addTestimonialBtn').style.display = 'block';
@@ -1416,7 +1608,7 @@
             if (!appData.settings.contests) appData.settings.contests = [];
             appData.settings.contests.push(newContest);
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             refreshAllLists();
             document.getElementById('contestForm').reset();
             document.getElementById('addContestBtn').style.display = 'block';
@@ -1433,7 +1625,7 @@
                 endDate: document.getElementById('contestEndDate').value
             };
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             refreshAllLists();
             document.getElementById('contestForm').reset();
             document.getElementById('addContestBtn').style.display = 'block';
@@ -1441,6 +1633,7 @@
             showToast('تم تحديث المسابقة', 'success', true);
         });
 
+        // ================== إعدادات عامة ==================
         document.getElementById('saveGeneralSettings').addEventListener('click', async () => {
             appData.settings.currency = document.getElementById('currencySelect').value;
             appData.settings.language = document.getElementById('languageSelect').value;
@@ -1455,7 +1648,7 @@
             appData.settings.contactEmail = document.getElementById('contactEmail').value;
             appData.settings.whatsappNumber = document.getElementById('whatsappNumber').value.trim();
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ الإعدادات العامة', 'success', true);
         });
 
@@ -1463,7 +1656,7 @@
             const badges = document.getElementById('trustBadgesInput').value.split('\n').filter(b => b.trim());
             appData.settings.trustBadges = badges;
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             refreshAllLists();
             showToast('تم حفظ شارات الثقة', 'success', true);
         });
@@ -1485,7 +1678,7 @@
                 generalFontSize: document.getElementById('generalFontSize').value
             };
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ إعدادات التصميم', 'success', true);
         });
 
@@ -1495,7 +1688,7 @@
             const images = document.getElementById('headerImagesInput').value.split('\n').filter(img => img.trim());
             appData.header.images = images;
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ إعدادات الترويسة', 'success', true);
         });
 
@@ -1503,27 +1696,33 @@
             const tickerTexts = document.getElementById('tickerTextsInput').value.split('\n').filter(t => t.trim());
             appData.ticker = tickerTexts;
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ شريط الإعلانات', 'success', true);
         });
 
+        // ================== حفظ التذييل (معدل) ==================
         document.getElementById('saveFooterBtn').addEventListener('click', async () => {
             appData.footer.email = document.getElementById('footerEmail').value;
             appData.footer.phone = document.getElementById('footerPhone').value;
             appData.footer.whatsapp = document.getElementById('footerWhatsapp').value;
-            const socialText = document.getElementById('footerSocial').value;
-            const socialItems = socialText.split(',').map(s => s.trim()).filter(s => s);
-            appData.footer.social = socialItems.map(s => {
-                const [icon, url] = s.split(':');
-                return { icon: icon.trim(), url: url.trim() };
-            });
+
+            const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
+            const socialMedia = platforms.map(p => ({
+                platform: p,
+                url: document.getElementById(`social_${p}_url`).value.trim(),
+                active: document.getElementById(`social_${p}_active`).checked
+            }));
+            appData.footer.socialMedia = socialMedia;
+
             const paymentsText = document.getElementById('footerPayments').value;
             appData.footer.payments = paymentsText.split(',').map(p => p.trim()).filter(p => p);
+
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ التذييل', 'success', true);
         });
 
+        // ================== أذونات المتاجر ==================
         document.getElementById('saveStorePermissions').addEventListener('click', async () => {
             const storeId = document.getElementById('storePermissionStoreSelect').value;
             if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً أولاً');
@@ -1532,7 +1731,7 @@
                 store.ownerCode = document.getElementById('storeOwnerCode').value;
                 store.allowUpload = document.getElementById('storeAllowUpload').checked;
                 changedTables.add('stores');
-                await saveToSupabaseAdmin();
+                await saveToSupabaseAdmin(['stores']);
                 showToast('تم حفظ أذونات المتجر', 'success', true);
             }
         });
@@ -1544,7 +1743,7 @@
                 usage: document.getElementById('policyUsage').value
             };
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ سياسة السوق', 'success', true);
         });
 
@@ -1555,18 +1754,25 @@
                 vision: document.getElementById('aboutVision').value
             };
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ معلومات من نحن', 'success', true);
         });
 
+        // ================== نشر التحديثات (تم الحفاظ عليه) ==================
         document.getElementById('publishBtn').addEventListener('click', async () => {
-            await saveToSupabaseAdmin();
+            const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
+            changedTables.clear();
+            allTables.forEach(t => changedTables.add(t));
+            await saveToSupabaseAdmin(allTables);
             if (window.broadcastChannel) window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
             showToast('✅ تم نشر التحديثات', 'success', true);
         });
 
         document.getElementById('previewChangesBtn').addEventListener('click', async () => {
-            await saveToSupabaseAdmin();
+            const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
+            changedTables.clear();
+            allTables.forEach(t => changedTables.add(t));
+            await saveToSupabaseAdmin(allTables);
             if (window.broadcastChannel) window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
             window.open('index.html?preview=' + Date.now(), '_blank');
         });
@@ -1608,14 +1814,9 @@
                     await common.supabaseClient.from('testimonials').delete().neq('id', 0);
                     await common.supabaseClient.from('carousel').delete().neq('id', '');
                     await common.supabaseClient.from('messages').delete().neq('id', 0);
-                    changedTables.add('settings');
-                    changedTables.add('categories');
-                    changedTables.add('stores');
-                    changedTables.add('products');
-                    changedTables.add('testimonials');
-                    changedTables.add('carousel');
-                    changedTables.add('messages');
-                    await saveToSupabaseAdmin();
+                    changedTables.clear();
+                    ['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages'].forEach(t => changedTables.add(t));
+                    await saveToSupabaseAdmin(['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages']);
                     refreshAllLists();
                     showToast('✅ تم استيراد البيانات بنجاح', 'success', true);
                     document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
@@ -1627,15 +1828,12 @@
             reader.readAsText(file);
         });
 
+        // ================== حفظ فوري ومزامنة (تم الحفاظ عليه) ==================
         document.getElementById('forceSaveBtn').addEventListener('click', async () => {
-            changedTables.add('categories');
-            changedTables.add('stores');
-            changedTables.add('products');
-            changedTables.add('testimonials');
-            changedTables.add('carousel');
-            changedTables.add('messages');
-            changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
+            changedTables.clear();
+            allTables.forEach(t => changedTables.add(t));
+            await saveToSupabaseAdmin(allTables);
             showToast('✅ تم حفظ ومزامنة جميع البيانات', 'success', true);
         });
 
@@ -1667,10 +1865,11 @@
             }
             document.getElementById('headerImagesInput').value = currentImages.join('\n');
             changedTables.add('settings');
-            await saveToSupabaseAdmin();
+            await saveToSupabaseAdmin(['settings']);
             e.target.value = '';
         });
 
+        // ================== أحداث التغيير للقوائم المنسدلة ==================
         document.getElementById('storeCategorySelect').addEventListener('change', (e) => populateStoresList(e.target.value));
         document.getElementById('productCategorySelect').addEventListener('change', (e) => {
             const cat = e.target.value;
@@ -1693,6 +1892,9 @@
                 document.getElementById('previewChangesBtn').style.display = 'block';
                 sessionStorage.setItem('adminLoggedIn', 'true');
                 try {
+                    renderSocialFields();
+                    setupSaudiFlagUpload();
+
                     const cachedData = await common.loadFromIndexedDB();
                     if (cachedData) {
                         appData = cachedData;
