@@ -1,6 +1,6 @@
 // ================== Supabase Client ==================
-const SUPABASE_URL = "https://rltdptxnpotfymjqtsvp.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_SBYmfZaJmMsBzbIpDWvh7w_upcmdCNo";
+const SUPABASE_URL = "https://yfewocuxzqaehirtnzft.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_l6xR4jAntftBR7YnUlV2wg_A0E5NaQB";
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ================== IndexedDB Helper ==================
@@ -56,7 +56,7 @@ async function deleteFromIndexedDB() {
 }
 
 // ================== Supabase Storage Helpers ==================
-const STORAGE_BUCKET = 'marketplace-images';
+const STORAGE_BUCKET = 'images';
 
 async function uploadImage(file, path) {
     const { data, error } = await supabaseClient.storage
@@ -86,6 +86,40 @@ async function deleteImage(path) {
         .from(STORAGE_BUCKET)
         .remove([filePath]);
     if (error) console.warn("فشل حذف الصورة القديمة:", error);
+}
+
+// ================== ضغط الصورة قبل الرفع ==================
+async function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = (height * maxWidth) / width;
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = (width * maxHeight) / height;
+                    height = maxHeight;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    resolve(new File([blob], file.name, { type: 'image/jpeg' }));
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
 }
 
 // ================== إدارة البيانات مع IndexedDB و Supabase ==================
@@ -118,7 +152,7 @@ function getWhatsAppNumber() {
     return DEFAULT_WHATSAPP_NUMBER;
 }
 
-// ================== دالة ensureSocialMedia (الأساسية) ==================
+// ================== دالة ensureSocialMedia ==================
 function ensureSocialMedia(data) {
     if (!data) return data;
     if (!data.footer) data.footer = {};
@@ -130,7 +164,6 @@ function ensureSocialMedia(data) {
             active: true
         }));
     } else {
-        // التأكد من وجود جميع المنصات (في حال إضافة منصة جديدة لاحقاً)
         const existingPlatforms = data.footer.socialMedia.map(s => s.platform);
         const allPlatforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
         allPlatforms.forEach(p => {
@@ -172,13 +205,13 @@ async function loadAppData() {
     return window.appData;
 }
 
-// ================== جلب البيانات من Supabase (مع دعم socialMedia) ==================
+// ================== جلب البيانات من Supabase ==================
 async function fetchFromSupabase() {
     try {
         const { data: settings, error: settingsErr } = await supabaseClient
             .from('settings')
             .select('data')
-            .eq('id', 'main')
+            .eq('id', 1)
             .single();
         if (settingsErr && settingsErr.code !== 'PGRST116') throw settingsErr;
         if (!settings) return null;
@@ -221,19 +254,17 @@ async function fetchFromSupabase() {
             messages: messagesRes.data || []
         };
 
-        // ====== التأكد من وجود socialMedia ======
         ensureSocialMedia(result);
 
-        // ====== التأكد من وجود visitorCount ======
         if (!result.settings.visitorCount) {
             result.settings.visitorCount = 0;
         }
-
-        // ====== التأكد من وجود saudiFlagUrl ======
         if (!result.settings.saudiFlagUrl) {
             result.settings.saudiFlagUrl = '';
         }
-
+        if (!result.settings.trackingCode) {
+            result.settings.trackingCode = '';
+        }
         if (!result.settings.whatsappNumber) {
             result.settings.whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
         }
@@ -259,17 +290,15 @@ async function fetchFromSupabase() {
     }
 }
 
-// ================== حفظ البيانات إلى Supabase (مع دعم الحفظ الجزئي) ==================
+// ================== حفظ البيانات إلى Supabase ==================
 async function saveAppData(force = false, tables = null) {
     if (!window.appData) return;
-    // حفظ محلياً (دائماً)
     await saveToIndexedDB(window.appData);
-    // إذا كان هناك اتصال، ندفع فقط الجداول المطلوبة
     if (isOnline || force) {
         try {
             await Promise.race([
                 pushToSupabase(window.appData, tables),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة المزامنة')), 15000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة المزامنة')), 30000))
             ]);
         } catch (e) {
             console.warn('فشل دفع البيانات للسحابة:', e);
@@ -278,15 +307,13 @@ async function saveAppData(force = false, tables = null) {
     }
 }
 
-// ================== دفع البيانات إلى Supabase (مع دعم الحفظ الجزئي) ==================
 async function pushToSupabase(data, tables = null) {
     const allTables = !tables || tables.length === 0;
     
     try {
-        // 1. الإعدادات (settings)
         if (allTables || tables.includes('settings')) {
             await supabaseClient.from('settings').upsert({
-                id: 'main',
+                id: 1,
                 data: {
                     header: data.header,
                     ticker: data.ticker,
@@ -297,14 +324,12 @@ async function pushToSupabase(data, tables = null) {
             });
         }
 
-        // 2. الفئات (categories)
         if (allTables || tables.includes('categories')) {
             if (data.categories && data.categories.length > 0) {
                 await supabaseClient.from('categories').upsert(data.categories);
             }
         }
 
-        // 3. المتاجر (stores)
         if (allTables || tables.includes('stores')) {
             const allStores = [];
             for (const cat in data.stores) {
@@ -318,7 +343,6 @@ async function pushToSupabase(data, tables = null) {
             }
         }
 
-        // 4. المنتجات (products)
         if (allTables || tables.includes('products')) {
             const allProducts = [];
             for (const storeId in data.products) {
@@ -331,28 +355,24 @@ async function pushToSupabase(data, tables = null) {
             }
         }
 
-        // 5. التقييمات (testimonials)
         if (allTables || tables.includes('testimonials')) {
             if (data.testimonials && data.testimonials.length > 0) {
                 await supabaseClient.from('testimonials').upsert(data.testimonials);
             }
         }
 
-        // 6. الإعلانات الدوارة (carousel)
         if (allTables || tables.includes('carousel')) {
             if (data.carousel && data.carousel.length > 0) {
                 await supabaseClient.from('carousel').upsert(data.carousel);
             }
         }
 
-        // 7. رسائل الاتصال (messages)
         if (allTables || tables.includes('messages')) {
             if (data.messages && data.messages.length > 0) {
                 await supabaseClient.from('messages').upsert(data.messages);
             }
         }
 
-        // إعلام التبويبات الأخرى
         if (window.broadcastChannel) {
             window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
         }
@@ -449,9 +469,16 @@ function updateElementImage(selector, newSrc) {
     });
 }
 
-// ================== رفع الصور مع الحذف التلقائي ==================
+// ================== رفع الصور مع الضغط والحذف التلقائي ==================
 async function uploadAndReplaceImage(file, oldImageUrl, folder = 'images') {
     if (!file) return oldImageUrl;
+    try {
+        if (file.type.startsWith('image/')) {
+            file = await compressImage(file, 800, 800, 0.7);
+        }
+    } catch (e) {
+        console.warn('فشل ضغط الصورة، سيتم رفعها بدون ضغط:', e);
+    }
     const uniqueName = `${folder}/${Date.now()}_${file.name}`;
     const newUrl = await uploadImage(file, uniqueName);
     if (oldImageUrl) {
@@ -528,7 +555,7 @@ function translate(key) {
     return key;
 }
 
-// ================== دوال المستخدمين (تسجيل، دخول، إعجابات...) ==================
+// ================== دوال المستخدمين ==================
 function showLoginDialog() {
     const loginHtml = `<div id="loginModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:white; padding:30px; border-radius:40px; width:300px;"><h3 style="margin-bottom:20px;">تسجيل الدخول</h3><input type="text" id="loginUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;"><input type="password" id="loginPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;"><button onclick="window.performLogin()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold;">دخول</button><button onclick="window.showRegisterDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">إنشاء حساب جديد</button><button onclick="document.getElementById('loginModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button></div></div>`;
     document.body.insertAdjacentHTML('beforeend', loginHtml);
@@ -617,7 +644,7 @@ window.toggleFavorite = async function(productId, storeId, btn) {
     await supabaseClient.from('users').update({ favorites: currentUser.favorites }).eq('username', currentUser.username);
 };
 
-// ================== دوال السلة الكاملة ==================
+// ================== دوال السلة ==================
 function updateCartDisplay(appData) {
     const cartCountEl = document.getElementById('cartCount');
     const cartItemsEl = document.getElementById('cartItems');
@@ -731,7 +758,7 @@ function startCarousel() {
     // ستُستخدم من index.html
 }
 
-// ================== PWA: رسالة تثبيت منبثقة أعلى الشاشة ==================
+// ================== PWA ==================
 let deferredPrompt;
 let installToastTimeout;
 
@@ -845,6 +872,7 @@ window.common = {
     uploadImage,
     deleteImage,
     uploadAndReplaceImage,
+    compressImage,
     appData: window.appData,
     isOnline,
     loadAppData,
@@ -898,6 +926,7 @@ window.updateElementImage = updateElementImage;
 window.updateCartDisplay = updateCartDisplay;
 window.removeFromCart = removeFromCart;
 window.ensureSocialMedia = ensureSocialMedia;
+window.compressImage = compressImage;
 
 // تسجيل Service Worker
 if ('serviceWorker' in navigator) {
@@ -906,4 +935,4 @@ if ('serviceWorker' in navigator) {
             .then(reg => console.log('SW مسجل'))
             .catch(err => console.warn('فشل تسجيل SW', err));
     });
-        }
+    }
