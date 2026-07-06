@@ -41,7 +41,6 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 100%;
             border-radius: 0 0 30px 30px; background-size: cover; background-position: center;
             transition: background-image 1s ease-in-out;
-            /* صورة خلفية افتراضية تظهر قبل تحميل أي بيانات */
             background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=80');
         }
         header::before {
@@ -54,7 +53,7 @@
 
         .top-bar { background: #0f172a; color: white; padding: 0.5rem 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
         .top-bar-left { display: flex; align-items: center; gap: 15px; }
-        .top-bar-left img.flag { width: 32px; height: 20px; border-radius: 4px; }
+        .top-bar-left img.flag { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
         .top-bar-right { display: flex; align-items: center; gap: 15px; }
         .admin-link { background: #fbbf24; color: #0f172a; border: none; padding: 0.5rem 1.5rem; border-radius: 40px; font-weight: 600; cursor: pointer; transition: background 0.2s, transform 0.2s; text-decoration: none; display: inline-block; }
         .admin-link:hover { background: #f59e0b; transform: scale(1.02); }
@@ -99,8 +98,6 @@
         .search-bar button { background: #fbbf24; border: none; border-radius: 40px; padding: 0.5rem 1rem; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; gap: 5px; }
         .search-bar button:hover { background: #f59e0b; }
 
-        .refresh-btn { text-align: left; padding: 10px 5%; display: none; }
-        .refresh-btn button { background: #3b82f6; color: white; border: none; padding: 8px 20px; border-radius: 40px; font-weight: 600; cursor: pointer; }
         .refresh-toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: #10b981; color: white; padding: 10px 20px; border-radius: 40px; font-weight: bold; z-index: 9999; animation: slideDown 0.3s ease; }
         @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
         .update-notification { position: fixed; top: 20px; right: 20px; background: #fbbf24; color: #0f172a; padding: 10px 20px; border-radius: 40px; font-weight: bold; z-index: 9999; animation: slideInLeft 0.3s ease; }
@@ -185,8 +182,8 @@
         .trust-badges img:hover { transform: scale(1.1); }
 
         .footer-info { background: white; border-radius: 40px; padding: 2rem 5%; margin: 2rem 5%; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 30px; }
-        .social-icons { display: flex; gap: 15px; }
-        .social-icons a { display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; background: #f1f5f9; border-radius: 50%; color: #0f172a; font-size: 1.3rem; transition: background 0.3s, transform 0.3s; }
+        .social-icons { display: flex; gap: 15px; flex-wrap: wrap; }
+        .social-icons a { display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; background: #f1f5f9; border-radius: 50%; color: #0f172a; font-size: 1.3rem; transition: background 0.3s, transform 0.3s; text-decoration: none; }
         .social-icons a:hover { background: #fbbf24; transform: scale(1.1); }
         .payment-methods { display: flex; gap: 15px; flex-wrap: wrap; }
         .payment-methods i { font-size: 2.5rem; color: #1e293b; transition: transform 0.3s; }
@@ -262,10 +259,10 @@
     <a href="https://wa.me/967778562099" class="whatsapp-float" id="whatsappFloat" target="_blank" rel="noopener"><i class="fab fa-whatsapp"></i></a>
 
     <div class="top-bar">
-        <div class="top-bar-left"><span>مجمع أسواق ريادة المستهلك</span><span id="saudiFlagContainer" style="display: none;"><img src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg" alt="علم السعودية" class="flag"></span></div>
+        <div class="top-bar-left"><span>مجمع أسواق ريادة المستهلك</span><span id="saudiFlagContainer" style="display: none;"><img id="saudiFlagImg" src="https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg" alt="علم السعودية" class="flag"></span></div>
         <div class="top-bar-right"><div class="profile-link" id="profileLink" style="display: none;"><i class="fas fa-user-circle"></i></div><div class="cart-icon" id="cartIcon" style="display: none;"><i class="fas fa-shopping-cart"></i><span class="cart-count" id="cartCount">0</span></div><a href="admin.html" class="admin-link">لوحة التحكم</a></div>
     </div>
-    <div class="refresh-btn" id="adminRefreshBtn"><button onclick="window.refreshData()"><i class="fas fa-sync-alt"></i> تحديث البيانات</button></div>
+    <!-- زر تحديث البيانات تمت إزالته نهائياً -->
     <div id="contestsBar" class="contests-bar" style="display: none;"><div class="contests-content" id="contestsContent"></div></div>
     <header id="mainHeader"><div class="container"><h1 id="headerTitle">مجمع أسواق ريادة المستهلك</h1><p id="headerSubtitle">أفضل المتاجر والمنتجات بأفضل الأسعار</p></div></header>
     <div class="top-ticker" id="topTicker"><div class="top-ticker-content" id="tickerContent"></div></div>
@@ -292,23 +289,37 @@
     <script>
         let appData = null;
 
+        // ============= دالة عرض الصفحة الرئيسية (المعدلة) =============
         function renderHomePage() {
             if (!appData) return;
             document.getElementById('headerTitle').textContent = appData.header.title;
             document.getElementById('headerSubtitle').textContent = appData.header.subtitle;
             document.getElementById('tickerContent').innerHTML = appData.ticker.map(t => `<span>${DOMPurify.sanitize(t)}</span>`).join('');
-            if (appData.settings.showSaudiFlag) document.getElementById('saudiFlagContainer').style.display = 'inline';
-            else document.getElementById('saudiFlagContainer').style.display = 'none';
+            
+            // عرض العلم السعودي (دائري)
+            const flagContainer = document.getElementById('saudiFlagContainer');
+            const flagImg = document.getElementById('saudiFlagImg');
+            if (appData.settings.showSaudiFlag) {
+                flagContainer.style.display = 'inline';
+                const flagUrl = appData.settings.saudiFlagUrl || 'https://upload.wikimedia.org/wikipedia/commons/0/0d/Flag_of_Saudi_Arabia.svg';
+                flagImg.src = flagUrl;
+            } else {
+                flagContainer.style.display = 'none';
+            }
+            
             if (appData.settings.cartEnabled) document.getElementById('cartIcon').style.display = 'block';
             else document.getElementById('cartIcon').style.display = 'none';
             if (appData.settings.enableUserProfile) document.getElementById('profileLink').style.display = 'inline-block';
             else document.getElementById('profileLink').style.display = 'none';
+            
+            // عرض المسابقات
             if (appData.settings.contests && appData.settings.contests.length > 0) {
                 document.getElementById('contestsBar').style.display = 'block';
                 const content = appData.settings.contests.map(c => `<span class="contest-item"><i class="fas fa-trophy"></i> ${DOMPurify.sanitize(c.name)} - ${DOMPurify.sanitize(c.description)} (ينتهي: ${DOMPurify.sanitize(c.endDate)})</span>`).join('');
                 document.getElementById('contestsContent').innerHTML = content;
             } else document.getElementById('contestsBar').style.display = 'none';
 
+            // عرض الفهرس
             const indexGrid = document.getElementById('indexGrid');
             indexGrid.innerHTML = '';
             const categoriesForIndex = (appData.categories || []).filter(cat => cat.showInIndex !== false).sort((a, b) => (a.indexOrder || 0) - (b.indexOrder || 0));
@@ -325,6 +336,7 @@
                 });
             }
 
+            // عرض الفئات والمتاجر
             const container = document.getElementById('categoriesContainer');
             container.innerHTML = '';
             const activeCarousels = (appData.carousel || []).filter(c => c.active).sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -359,6 +371,7 @@
             });
             startCarousel();
 
+            // عرض التقييمات
             const testimonialsTrack = document.getElementById('testimonialsTrack');
             testimonialsTrack.innerHTML = '';
             appData.testimonials.forEach(t => {
@@ -367,22 +380,47 @@
                 testimonialsTrack.innerHTML += `<div class="testimonial-card"><img src="${t.image}" class="customer-img" loading="lazy"><div class="customer-name">${t.name}</div><div class="customer-rating">${starsHtml}</div><div class="customer-review">${t.review}</div></div>`;
             });
 
+            // عرض شارات الثقة
             const trustContainer = document.getElementById('trustBadgesContainer');
             trustContainer.innerHTML = '';
             (appData.settings.trustBadges || []).forEach(badge => { trustContainer.innerHTML += `<img src="${badge}" alt="badge" loading="lazy">`; });
 
+            // ================= التذييل المُعدَّل مع الأيقونات الثابتة =================
             const footerSection = document.getElementById('footerSection');
-            const socialIcons = (appData.footer.social || []).length > 0 ? appData.footer.social : [
-                { icon: "fab fa-facebook-f", url: "#" },
-                { icon: "fab fa-twitter", url: "#" },
-                { icon: "fab fa-instagram", url: "#" },
-                { icon: "fab fa-whatsapp", url: "https://wa.me/" + (window.getWhatsAppNumber ? window.getWhatsAppNumber() : '967778562099') }
-            ];
-            const socialHtml = socialIcons.map(s => {
-                const url = s.url || '#';
-                return `<a href="${url}" target="_blank" rel="noopener"><i class="${s.icon}"></i></a>`;
-            }).join('');
 
+            // تعريف المنصات الثابتة مع أيقوناتها وروابط افتراضية
+            const socialPlatforms = [
+                { platform: 'whatsapp', icon: 'fab fa-whatsapp', defaultUrl: 'https://wa.me/' + (window.getWhatsAppNumber ? window.getWhatsAppNumber() : '967778562099') },
+                { platform: 'facebook', icon: 'fab fa-facebook-f', defaultUrl: '#' },
+                { platform: 'twitter', icon: 'fab fa-twitter', defaultUrl: '#' },
+                { platform: 'instagram', icon: 'fab fa-instagram', defaultUrl: '#' },
+                { platform: 'telegram', icon: 'fab fa-telegram-plane', defaultUrl: '#' },
+                { platform: 'snapchat', icon: 'fab fa-snapchat-ghost', defaultUrl: '#' },
+                { platform: 'linkedin', icon: 'fab fa-linkedin-in', defaultUrl: '#' },
+                { platform: 'tiktok', icon: 'fab fa-tiktok', defaultUrl: '#' }
+            ];
+
+            // قراءة بيانات socialMedia من appData (من لوحة التحكم)
+            const socialMedia = appData.footer.socialMedia || [];
+
+            // بناء الأيقونات النشطة فقط
+            const socialItems = socialPlatforms.map(sp => {
+                const saved = socialMedia.find(s => s.platform === sp.platform);
+                return {
+                    ...sp,
+                    url: saved && saved.url ? saved.url : sp.defaultUrl,
+                    active: saved ? saved.active : true
+                };
+            }).filter(item => item.active);
+
+            // إنشاء HTML للأيقونات
+            const socialHtml = socialItems.map(s => `
+                <a href="${s.url}" target="_blank" rel="noopener" aria-label="${s.platform}">
+                    <i class="${s.icon}"></i>
+                </a>
+            `).join('');
+
+            // بناء التذييل بالكامل
             footerSection.innerHTML = `
                 <div class="contact-section">
                     <h3>${translate('تواصل معنا', appData)}</h3>
@@ -405,6 +443,7 @@
             attachLongPressShare();
         }
 
+        // ============= باقي الدوال (لم تتغير) =============
         function attachLongPressShare() {
             const items = document.querySelectorAll('.product-item img, .store-logo');
             items.forEach(img => {
@@ -885,6 +924,7 @@
             if (location.hash === `#store/${storeId}`) showStorePage(storeId);
         });
 
+        // ================== السحب للتحديث (Pull to Refresh) ==================
         let pullStartY = 0, pullMoveY = 0, pulling = false, refreshIndicator = null;
         function createRefreshIndicator() { const div = document.createElement('div'); div.id = 'pullRefreshIndicator'; div.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> اسحب للتحديث'; document.body.appendChild(div); return div; }
         function updateRefreshIndicator(offset) { if (!refreshIndicator) return; if (offset > 0 && offset <= 60) refreshIndicator.style.top = `${Math.min(0, offset - 60)}px`; if (offset >= 60) { refreshIndicator.innerHTML = '<i class="fas fa-arrow-down"></i> حرر للتحديث'; refreshIndicator.style.top = '0px'; } else refreshIndicator.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> اسحب للتحديث'; }
@@ -912,10 +952,33 @@
             }
         };
 
-        let visitorCount = localStorage.getItem('visitorCount') ? parseInt(localStorage.getItem('visitorCount')) : 0;
-        if (!sessionStorage.getItem('visited')) { visitorCount++; localStorage.setItem('visitorCount', visitorCount); sessionStorage.setItem('visited', 'true'); }
-        document.getElementById('visitorCount').textContent = visitorCount;
+        // ================== عداد الزوار التراكمي والمتزامن ==================
+        let visitorCount = 0;
+        const VISITOR_KEY = 'visitor_session';
 
+        async function incrementVisitorCount() {
+            let currentCount = appData?.settings?.visitorCount || parseInt(localStorage.getItem('visitorCount')) || 0;
+            const newCount = currentCount + 1;
+            localStorage.setItem('visitorCount', newCount);
+            if (appData) {
+                appData.settings.visitorCount = newCount;
+                await common.saveAppData(true);
+                document.getElementById('visitorCount').textContent = newCount;
+            }
+        }
+
+        function checkNewVisit() {
+            const sessionId = sessionStorage.getItem(VISITOR_KEY);
+            if (!sessionId) {
+                sessionStorage.setItem(VISITOR_KEY, Date.now().toString());
+                incrementVisitorCount();
+            } else {
+                const count = appData?.settings?.visitorCount || parseInt(localStorage.getItem('visitorCount')) || 0;
+                document.getElementById('visitorCount').textContent = count;
+            }
+        }
+
+        // ================== تهيئة التطبيق ==================
         (async function initializeApp() {
             let cached = null;
             try {
@@ -925,12 +988,14 @@
                     common.applyDesignSettings(appData);
                     renderHomePage();
                     updateCartDisplay(appData);
+                    checkNewVisit();
                 }
 
                 appData = await common.loadAppData();
                 if (!cached) {
                     common.applyDesignSettings(appData);
                     renderHomePage();
+                    checkNewVisit();
                 }
                 common.startHeaderInterval(appData);
                 updateCartDisplay(appData);
