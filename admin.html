@@ -51,18 +51,17 @@
         .status-badge { padding: 5px 10px; border-radius: 20px; font-size: 12px; display: inline-block; }
         .status-online { background: #10b981; color: white; }
         .status-offline { background: #ef4444; color: white; }
-        /* حقول التواصل الاجتماعي */
         .social-field-group { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 5px 0; background: #0f172a; padding: 8px 12px; border-radius: 40px; }
         .social-field-group i { width: 30px; color: #fbbf24; }
         .social-field-group label { min-width: 80px; font-weight: 600; color: #e2e8f0; }
         .social-field-group input[type="text"] { flex: 1; min-width: 150px; padding: 8px 15px; border-radius: 40px; border: none; background: #1e293b; color: white; }
         .social-field-group label:last-child { display: flex; align-items: center; gap: 5px; color: #cbd5e1; min-width: auto; }
-        /* منطقة رفع العلم السعودي */
         #saudiFlagDropZone { border: 2px dashed #fbbf24; border-radius: 20px; padding: 20px; text-align: center; cursor: pointer; background: #1e293b; transition: 0.3s; margin-top:10px; }
         #saudiFlagDropZone:hover { border-color: #10b981; background: #1e293b; }
         #saudiFlagPreview { width: 100px; height: 100px; border-radius: 50%; overflow: hidden; margin: 0 auto 10px; background: #0f172a; border: 3px solid #fbbf24; display: flex; align-items: center; justify-content: center; }
         #saudiFlagPreview img { width: 100%; height: 100%; object-fit: cover; display: none; }
         #saudiFlagPreview span { color: #94a3b8; font-size: 0.8rem; }
+        .tracking-code-field { direction: ltr; text-align: left; font-family: monospace; font-size: 0.9rem; }
     </style>
 </head>
 <body>
@@ -111,7 +110,7 @@
                 <p style="font-size:12px; color:#94a3b8; margin-top:10px;">⚠️ الاستيراد سيزيل البيانات الحالية ويستبدلها بالملف المرفوع</p>
             </div>
 
-            <!-- نشر التحديثات (تم الحفاظ عليه) -->
+            <!-- نشر التحديثات -->
             <div class="admin-card">
                 <h2>نشر التحديثات</h2>
                 <button id="publishBtn" style="background:#10b981; color:white; border:none; padding:15px; border-radius:40px; font-weight:700; cursor:pointer; width:100%;">
@@ -120,7 +119,7 @@
                 <p style="margin-top:10px; color:#94a3b8;">سيتم حفظ جميع التغييرات في السحابة فوراً</p>
             </div>
 
-            <!-- الإعدادات العامة (مع رفع العلم) -->
+            <!-- الإعدادات العامة -->
             <div class="admin-card">
                 <h2>الإعدادات العامة</h2>
                 <div class="admin-form">
@@ -139,7 +138,7 @@
                     </select>
                     <label><input type="checkbox" id="showSaudiFlagCheckbox"> عرض علم السعودية</label>
                     
-                    <!-- رفع العلم السعودي (سحب وإفلات) -->
+                    <!-- رفع العلم السعودي -->
                     <div style="border:1px solid #334155; border-radius:20px; padding:15px; margin-top:5px; background:#0f172a;">
                         <label style="color:#fbbf24; font-weight:bold;">العلم السعودي (شعار دائري)</label>
                         <div id="saudiFlagDropZone">
@@ -155,14 +154,21 @@
 
                     <label><input type="checkbox" id="cartEnabledCheckbox"> تفعيل سلة التسوق</label>
                     <label><input type="checkbox" id="enableUserProfileCheckbox"> تفعيل صفحة المستخدم</label>
+                    
                     <h3>طرق إرسال الطلبات</h3>
                     <label><input type="checkbox" id="orderWhatsappCheckbox"> واتساب</label>
                     <label><input type="checkbox" id="orderEmailCheckbox"> البريد الإلكتروني</label>
                     <label><input type="checkbox" id="orderChatCheckbox"> محادثة المدير</label>
+                    
                     <label>البريد الإلكتروني لاستقبال رسائل الاتصال</label>
                     <input type="email" id="contactEmail" placeholder="admin@example.com">
+                    
                     <label>رقم الواتساب (مثال: 967778562099)</label>
                     <input type="text" id="whatsappNumber" placeholder="رقم الواتساب الدولي">
+                    
+                    <label>كود التتبع (Google Analytics / Plausible)</label>
+                    <textarea id="trackingCode" rows="4" placeholder="ألصق كود التتبع هنا (مثل كود Google Analytics أو Plausible)" class="tracking-code-field"></textarea>
+                    
                     <button id="saveGeneralSettings">حفظ الإعدادات</button>
                 </div>
             </div>
@@ -415,7 +421,7 @@
                 <div class="admin-list" id="testimonialsList"></div>
             </div>
 
-            <!-- التذييل (مع حقول منفصلة لوسائل التواصل) -->
+            <!-- التذييل -->
             <div class="admin-card">
                 <h2>التذييل</h2>
                 <div class="admin-form">
@@ -423,7 +429,6 @@
                     <input type="text" id="footerPhone" placeholder="الهاتف">
                     <input type="text" id="footerWhatsapp" placeholder="رقم الواتساب (للطلبات)">
 
-                    <!-- قسم وسائل التواصل الاجتماعي -->
                     <div style="border:1px solid #334155; padding:15px; border-radius:20px; margin:10px 0; background:#0f172a;">
                         <h4 style="color:#fbbf24; margin-bottom:10px;">روابط حسابات التواصل الاجتماعي</h4>
                         <p style="font-size:0.8rem; color:#94a3b8; margin-bottom:10px;">أدخل الرابط الكامل لكل منصة، واختر إظهار أو إخفاء الأيقونة في التذييل.</p>
@@ -453,7 +458,7 @@
                 <div class="admin-list" id="messagesList"></div>
             </div>
 
-            <!-- سجل الأخطاء (للمدير فقط) -->
+            <!-- سجل الأخطاء -->
             <div class="admin-card">
                 <h2>سجل الأخطاء</h2>
                 <div class="admin-list" id="adminErrorsList" style="max-height:300px; overflow-y:auto;">
@@ -508,7 +513,7 @@
             }
         }
 
-        // ============= حفظ البيانات إلى Supabase (مع الحفاظ على الأزرار) =============
+        // ============= حفظ البيانات =============
         async function saveToSupabaseAdmin(tables = null) {
             const tablesToSave = tables || Array.from(changedTables);
             if (!appData || isSaving) return;
@@ -523,7 +528,7 @@
                     isSaving = false;
                     showToast("⚠️ انتهت مهلة الحفظ، حاول مرة أخرى", 'error', true);
                 }
-            }, 10000);
+            }, 30000);
 
             try {
                 await common.saveAppData(true, tablesToSave);
@@ -555,27 +560,45 @@
             document.getElementById(fileInputId).addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                let oldUrl = null;
-                if (getOldUrl) {
-                    oldUrl = getOldUrl();
-                } else {
-                    oldUrl = document.getElementById(targetInputId)?.value || null;
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('⚠️ حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)', 'error', true);
+                    e.target.value = '';
+                    return;
                 }
+                showSpinner(true);
+                showToast('⏳ جاري رفع الصورة...', 'success', true);
                 try {
+                    let oldUrl = null;
+                    if (getOldUrl) {
+                        oldUrl = getOldUrl();
+                    } else {
+                        oldUrl = document.getElementById(targetInputId)?.value || null;
+                    }
                     const newUrl = await common.uploadAndReplaceImage(file, oldUrl, folder);
                     document.getElementById(targetInputId).value = newUrl;
-                    showToast('✅ تم رفع الصورة وحذف القديمة', 'success', true);
+                    showToast('✅ تم رفع الصورة بنجاح', 'success', true);
                     changedTables.add('settings');
                     await saveToSupabaseAdmin(['settings']);
                 } catch (err) {
-                    showToast('❌ فشل رفع الصورة: ' + err.message, 'error', true);
+                    console.error('خطأ في رفع الصورة:', err);
+                    let errorMsg = err.message || 'فشل رفع الصورة';
+                    if (err.status === 404) {
+                        errorMsg = '⚠️ حاوية التخزين غير موجودة. تأكد من إنشاء bucket باسم "images" في Supabase.';
+                    } else if (err.status === 400) {
+                        errorMsg = '⚠️ خطأ في الطلب. تأكد من إعدادات CORS وصلاحيات الرفع في Supabase.';
+                    } else if (err.message.includes('timeout') || err.message.includes('مهلة')) {
+                        errorMsg = '⚠️ انتهت المهلة. حاول رفع صورة أصغر حجماً أو تحقق من اتصال الإنترنت.';
+                    }
+                    showToast('❌ ' + errorMsg, 'error', true);
                     common.logAdminError(err, 'uploadImage');
+                } finally {
+                    showSpinner(false);
+                    e.target.value = '';
                 }
-                e.target.value = '';
             });
         }
 
-        // ============= رفع العلم السعودي (سحب وإفلات) =============
+        // ============= رفع العلم السعودي =============
         function setupSaudiFlagUpload() {
             const dropZone = document.getElementById('saudiFlagDropZone');
             const fileInput = document.getElementById('saudiFlagFileInput');
@@ -626,6 +649,10 @@
 
             async function handleSaudiFlagFile(file) {
                 if (!file) return;
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('⚠️ حجم الصورة كبير جداً (الحد الأقصى 5 ميجابايت)', 'error', true);
+                    return;
+                }
                 try {
                     showSpinner(true);
                     const oldUrl = appData?.settings?.saudiFlagUrl || null;
@@ -697,22 +724,21 @@
             container.innerHTML = html;
         }
 
-        // ============= دوال ملء الحقول من البيانات =============
+        // ============= دوال ملء الحقول =============
         function populateGeneralSettings() {
             if (!appData) return;
-            document.getElementById('currencySelect').value = appData.settings.currency;
-            document.getElementById('languageSelect').value = appData.settings.language;
-            document.getElementById('showSaudiFlagCheckbox').checked = appData.settings.showSaudiFlag;
-            document.getElementById('cartEnabledCheckbox').checked = appData.settings.cartEnabled;
-            document.getElementById('enableUserProfileCheckbox').checked = appData.settings.enableUserProfile;
-            document.getElementById('orderWhatsappCheckbox').checked = appData.settings.orderMethods.whatsapp;
-            document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods.email;
-            document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods.chat;
+            document.getElementById('currencySelect').value = appData.settings.currency || 'SAR';
+            document.getElementById('languageSelect').value = appData.settings.language || 'ar';
+            document.getElementById('showSaudiFlagCheckbox').checked = appData.settings.showSaudiFlag || false;
+            document.getElementById('cartEnabledCheckbox').checked = appData.settings.cartEnabled || false;
+            document.getElementById('enableUserProfileCheckbox').checked = appData.settings.enableUserProfile || false;
+            document.getElementById('orderWhatsappCheckbox').checked = appData.settings.orderMethods?.whatsapp || false;
+            document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods?.email || false;
+            document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods?.chat || false;
             document.getElementById('contactEmail').value = appData.settings.contactEmail || '';
             document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || (window.DEFAULT_WHATSAPP_NUMBER || '967778562099');
             document.getElementById('trustBadgesInput').value = (appData.settings.trustBadges || []).join('\n');
-            
-            // تحديث معاينة العلم
+            document.getElementById('trackingCode').value = appData.settings.trackingCode || '';
             const flagImage = document.getElementById('saudiFlagImage');
             const placeholder = document.getElementById('saudiFlagPlaceholder');
             const url = appData.settings?.saudiFlagUrl || '';
@@ -732,7 +758,6 @@
             document.getElementById('footerPhone').value = appData.footer.phone || '';
             document.getElementById('footerWhatsapp').value = appData.footer.whatsapp || '';
             document.getElementById('footerPayments').value = (appData.footer.payments || []).join(', ');
-
             const socialMedia = appData.footer.socialMedia || [];
             const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
             platforms.forEach(p => {
@@ -765,7 +790,6 @@
             renderAdminErrors();
         }
 
-        // ============= باقي دوال populate (كما هي، ولكن مع استدعاء saveToSupabaseAdmin مع الجداول) =============
         function populateCategorySelects() {
             const selects = ['storeCategorySelect', 'productCategorySelect', 'storePermissionSelect'];
             selects.forEach(selId => {
@@ -914,25 +938,26 @@
 
         function populateDesignSettings() {
             if (!appData) return;
-            document.getElementById('categoryBg').value = appData.design.categoryBg;
-            document.getElementById('categoryText').value = appData.design.categoryText;
-            document.getElementById('categoryFontSize').value = appData.design.categoryFontSize;
-            document.getElementById('storeBg').value = appData.design.storeBg;
-            document.getElementById('storeText').value = appData.design.storeText;
-            document.getElementById('storeFontSize').value = appData.design.storeFontSize;
-            document.getElementById('productBg').value = appData.design.productBg;
-            document.getElementById('productText').value = appData.design.productText;
-            document.getElementById('productFontSize').value = appData.design.productFontSize;
-            document.getElementById('adBg').value = appData.design.adBg;
-            document.getElementById('adText').value = appData.design.adText;
-            document.getElementById('adFontSize').value = appData.design.adFontSize;
-            document.getElementById('generalFontSize').value = appData.design.generalFontSize;
+            const d = appData.design || {};
+            document.getElementById('categoryBg').value = d.categoryBg || 'linear-gradient(145deg, #f9eef7, #f3d9e8)';
+            document.getElementById('categoryText').value = d.categoryText || '#9b4d96';
+            document.getElementById('categoryFontSize').value = d.categoryFontSize || '2rem';
+            document.getElementById('storeBg').value = d.storeBg || '#ffffff';
+            document.getElementById('storeText').value = d.storeText || '#1e293b';
+            document.getElementById('storeFontSize').value = d.storeFontSize || '1.3rem';
+            document.getElementById('productBg').value = d.productBg || '#ffffff';
+            document.getElementById('productText').value = d.productText || '#1e293b';
+            document.getElementById('productFontSize').value = d.productFontSize || '0.85rem';
+            document.getElementById('adBg').value = d.adBg || 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+            document.getElementById('adText').value = d.adText || '#0f172a';
+            document.getElementById('adFontSize').value = d.adFontSize || '1.1rem';
+            document.getElementById('generalFontSize').value = d.generalFontSize || '1rem';
         }
 
         function populateHeaderSettings() {
             if (!appData) return;
-            document.getElementById('headerTitleInput').value = appData.header.title;
-            document.getElementById('headerSubtitleInput').value = appData.header.subtitle;
+            document.getElementById('headerTitleInput').value = appData.header.title || '';
+            document.getElementById('headerSubtitleInput').value = appData.header.subtitle || '';
             document.getElementById('headerImagesInput').value = (appData.header.images || []).join('\n');
         }
 
@@ -959,14 +984,13 @@
             document.getElementById('policyTerms').value = policy.terms || '';
             document.getElementById('policyReturns').value = policy.returns || '';
             document.getElementById('policyUsage').value = policy.usage || '';
-
             const about = appData.settings.aboutUs || {};
             document.getElementById('aboutDescription').value = about.description || '';
             document.getElementById('aboutMission').value = about.mission || '';
             document.getElementById('aboutVision').value = about.vision || '';
         }
 
-        // ============= إعلانات المتاجر (Banners) =============
+        // ============= Banners =============
         function populateBannerStoreSelect() {
             const select = document.getElementById('bannerStoreSelect');
             if (!select) return;
@@ -1047,13 +1071,11 @@
             if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً');
             const store = findStoreById(storeId);
             if (!store) return;
-            
             const type = document.getElementById('bannerType').value;
             const content = document.getElementById('bannerContent').value;
             const link = document.getElementById('bannerLink').value;
             const order = parseInt(document.getElementById('bannerOrder').value) || 0;
             const active = document.getElementById('bannerActive').checked;
-            
             let images = [];
             if (type === 'images') {
                 const img1 = document.getElementById('bannerImage1').value.trim();
@@ -1061,17 +1083,7 @@
                 const img3 = document.getElementById('bannerImage3').value.trim();
                 images = [img1, img2, img3].filter(url => url !== '');
             }
-            
-            const newBanner = {
-                id: 'banner-' + Date.now(),
-                type,
-                content,
-                images,
-                link,
-                order,
-                active
-            };
-            
+            const newBanner = { id: 'banner-' + Date.now(), type, content, images, link, order, active };
             if (!store.banners) store.banners = [];
             store.banners.push(newBanner);
             changedTables.add('stores');
@@ -1090,13 +1102,11 @@
             if (!store) return;
             const banner = (store.banners || []).find(b => b.id === bannerId);
             if (!banner) return;
-            
             banner.type = document.getElementById('bannerType').value;
             banner.content = document.getElementById('bannerContent').value;
             banner.link = document.getElementById('bannerLink').value;
             banner.order = parseInt(document.getElementById('bannerOrder').value) || 0;
             banner.active = document.getElementById('bannerActive').checked;
-            
             if (banner.type === 'images') {
                 const img1 = document.getElementById('bannerImage1').value.trim();
                 const img2 = document.getElementById('bannerImage2').value.trim();
@@ -1105,7 +1115,6 @@
             } else {
                 banner.images = [];
             }
-            
             changedTables.add('stores');
             await saveToSupabaseAdmin(['stores']);
             refreshBannerList(storeId);
@@ -1124,7 +1133,7 @@
             document.getElementById('bannerImagesGroup').style.display = isText ? 'none' : 'block';
         });
 
-        // ================== دوال CRUD للفئات والمتاجر والمنتجات ==================
+        // ================== دوال CRUD ==================
         window.editCategory = function(id) {
             if (!appData) return;
             const cat = appData.categories.find(c => c.id === id);
@@ -1259,7 +1268,7 @@
             }
         };
 
-        // ================== أحداث أزرار الإضافة والتحديث (مع تمرير الجداول) ==================
+        // ================== أحداث الأزرار ==================
         document.getElementById('addCategoryBtn').addEventListener('click', async () => {
             const name = document.getElementById('categoryName').value;
             if (!name) return alert('اسم الفئة مطلوب');
@@ -1633,7 +1642,7 @@
             showToast('تم تحديث المسابقة', 'success', true);
         });
 
-        // ================== إعدادات عامة ==================
+        // ================== حفظ الإعدادات العامة (مع كود التتبع) ==================
         document.getElementById('saveGeneralSettings').addEventListener('click', async () => {
             appData.settings.currency = document.getElementById('currencySelect').value;
             appData.settings.language = document.getElementById('languageSelect').value;
@@ -1647,6 +1656,7 @@
             };
             appData.settings.contactEmail = document.getElementById('contactEmail').value;
             appData.settings.whatsappNumber = document.getElementById('whatsappNumber').value.trim();
+            appData.settings.trackingCode = document.getElementById('trackingCode').value.trim();
             changedTables.add('settings');
             await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ الإعدادات العامة', 'success', true);
@@ -1700,12 +1710,10 @@
             showToast('تم حفظ شريط الإعلانات', 'success', true);
         });
 
-        // ================== حفظ التذييل (معدل) ==================
         document.getElementById('saveFooterBtn').addEventListener('click', async () => {
             appData.footer.email = document.getElementById('footerEmail').value;
             appData.footer.phone = document.getElementById('footerPhone').value;
             appData.footer.whatsapp = document.getElementById('footerWhatsapp').value;
-
             const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
             const socialMedia = platforms.map(p => ({
                 platform: p,
@@ -1713,16 +1721,13 @@
                 active: document.getElementById(`social_${p}_active`).checked
             }));
             appData.footer.socialMedia = socialMedia;
-
             const paymentsText = document.getElementById('footerPayments').value;
             appData.footer.payments = paymentsText.split(',').map(p => p.trim()).filter(p => p);
-
             changedTables.add('settings');
             await saveToSupabaseAdmin(['settings']);
             showToast('تم حفظ التذييل', 'success', true);
         });
 
-        // ================== أذونات المتاجر ==================
         document.getElementById('saveStorePermissions').addEventListener('click', async () => {
             const storeId = document.getElementById('storePermissionStoreSelect').value;
             if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً أولاً');
@@ -1758,7 +1763,7 @@
             showToast('تم حفظ معلومات من نحن', 'success', true);
         });
 
-        // ================== نشر التحديثات (تم الحفاظ عليه) ==================
+        // ================== نشر التحديثات ==================
         document.getElementById('publishBtn').addEventListener('click', async () => {
             const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
             changedTables.clear();
@@ -1828,7 +1833,6 @@
             reader.readAsText(file);
         });
 
-        // ================== حفظ فوري ومزامنة (تم الحفاظ عليه) ==================
         document.getElementById('forceSaveBtn').addEventListener('click', async () => {
             const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
             changedTables.clear();
@@ -1837,7 +1841,7 @@
             showToast('✅ تم حفظ ومزامنة جميع البيانات', 'success', true);
         });
 
-        // ================== إعدادات رفع الصور ==================
+        // ================== رفع الصور ==================
         setupImageUpload('categoryFeaturedImageFile', 'categoryFeaturedImage', 'categories');
         setupImageUpload('categoryIndexImageFile', 'categoryIndexImage', 'categories');
         setupImageUpload('storeLogoFile', 'storeLogo', 'stores');
@@ -1883,7 +1887,7 @@
         });
         document.getElementById('storePermissionSelect').addEventListener('change', () => populateStorePermissions());
 
-        // ================== تسجيل الدخول وتهيئة التطبيق ==================
+        // ================== تسجيل الدخول ==================
         window.checkLogin = async function() {
             const code = document.getElementById('secretCodeInput').value;
             if (code === "202122") {
@@ -1894,7 +1898,6 @@
                 try {
                     renderSocialFields();
                     setupSaudiFlagUpload();
-
                     const cachedData = await common.loadFromIndexedDB();
                     if (cachedData) {
                         appData = cachedData;
@@ -1902,14 +1905,12 @@
                         document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
                         updateConnectionStatus();
                     }
-
                     appData = await common.loadAppData();
                     if (!cachedData) {
                         refreshAllLists();
                     }
                     document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
                     updateConnectionStatus();
-
                     window.broadcastChannel = new BroadcastChannel('markets_channel');
                     window.broadcastChannel.onmessage = (event) => {
                         if (event.data.type === 'DB_UPDATE') {
@@ -1953,4 +1954,4 @@
         });
     </script>
 </body>
-</html>
+    </html>
