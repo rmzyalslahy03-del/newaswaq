@@ -118,9 +118,35 @@ function getWhatsAppNumber() {
     return DEFAULT_WHATSAPP_NUMBER;
 }
 
+// ================== دالة ensureSocialMedia (الأساسية) ==================
+function ensureSocialMedia(data) {
+    if (!data) return data;
+    if (!data.footer) data.footer = {};
+    if (!data.footer.socialMedia || !Array.isArray(data.footer.socialMedia) || data.footer.socialMedia.length === 0) {
+        const defaultPlatforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
+        data.footer.socialMedia = defaultPlatforms.map(platform => ({
+            platform,
+            url: '',
+            active: true
+        }));
+    } else {
+        // التأكد من وجود جميع المنصات (في حال إضافة منصة جديدة لاحقاً)
+        const existingPlatforms = data.footer.socialMedia.map(s => s.platform);
+        const allPlatforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
+        allPlatforms.forEach(p => {
+            if (!existingPlatforms.includes(p)) {
+                data.footer.socialMedia.push({ platform: p, url: '', active: true });
+            }
+        });
+    }
+    return data;
+}
+
+// ================== تحميل البيانات الأساسية ==================
 async function loadAppData() {
     let localData = await loadFromIndexedDB();
     if (localData) {
+        localData = ensureSocialMedia(localData);
         window.appData = localData;
         if (isOnline) {
             try {
@@ -146,6 +172,7 @@ async function loadAppData() {
     return window.appData;
 }
 
+// ================== جلب البيانات من Supabase (مع دعم socialMedia) ==================
 async function fetchFromSupabase() {
     try {
         const { data: settings, error: settingsErr } = await supabaseClient
@@ -181,18 +208,31 @@ async function fetchFromSupabase() {
         });
 
         const result = {
-            header: settings.data.header,
-            ticker: settings.data.ticker,
-            design: settings.data.design,
-            categories: categoriesRes.data,
-            stores: storesMap,
-            products: productsMap,
-            testimonials: testimonialsRes.data,
-            footer: settings.data.footer,
-            settings: settings.data.settings,
-            carousel: carouselRes.data,
-            messages: messagesRes.data
+            header: settings.data.header || {},
+            ticker: settings.data.ticker || [],
+            design: settings.data.design || {},
+            categories: categoriesRes.data || [],
+            stores: storesMap || {},
+            products: productsMap || {},
+            testimonials: testimonialsRes.data || [],
+            footer: settings.data.footer || {},
+            settings: settings.data.settings || {},
+            carousel: carouselRes.data || [],
+            messages: messagesRes.data || []
         };
+
+        // ====== التأكد من وجود socialMedia ======
+        ensureSocialMedia(result);
+
+        // ====== التأكد من وجود visitorCount ======
+        if (!result.settings.visitorCount) {
+            result.settings.visitorCount = 0;
+        }
+
+        // ====== التأكد من وجود saudiFlagUrl ======
+        if (!result.settings.saudiFlagUrl) {
+            result.settings.saudiFlagUrl = '';
+        }
 
         if (!result.settings.whatsappNumber) {
             result.settings.whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
@@ -219,45 +259,103 @@ async function fetchFromSupabase() {
     }
 }
 
-async function saveAppData(force = false) {
+// ================== حفظ البيانات إلى Supabase (مع دعم الحفظ الجزئي) ==================
+async function saveAppData(force = false, tables = null) {
     if (!window.appData) return;
+    // حفظ محلياً (دائماً)
     await saveToIndexedDB(window.appData);
+    // إذا كان هناك اتصال، ندفع فقط الجداول المطلوبة
     if (isOnline || force) {
-        await pushToSupabase(window.appData);
+        try {
+            await Promise.race([
+                pushToSupabase(window.appData, tables),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة المزامنة')), 15000))
+            ]);
+        } catch (e) {
+            console.warn('فشل دفع البيانات للسحابة:', e);
+            logAdminError(e, 'saveAppData push');
+        }
     }
 }
 
-async function pushToSupabase(data) {
+// ================== دفع البيانات إلى Supabase (مع دعم الحفظ الجزئي) ==================
+async function pushToSupabase(data, tables = null) {
+    const allTables = !tables || tables.length === 0;
+    
     try {
-        await supabaseClient.from('settings').upsert({
-            id: 'main',
-            data: {
-                header: data.header,
-                ticker: data.ticker,
-                design: data.design,
-                footer: data.footer,
-                settings: data.settings
-            }
-        });
-        for (const cat of data.categories) await supabaseClient.from('categories').upsert(cat);
-        const allStores = [];
-        for (const cat in data.stores) {
-            for (const store of data.stores[cat]) {
-                if (!store.banners) store.banners = [];
-                allStores.push(store);
-            }
+        // 1. الإعدادات (settings)
+        if (allTables || tables.includes('settings')) {
+            await supabaseClient.from('settings').upsert({
+                id: 'main',
+                data: {
+                    header: data.header,
+                    ticker: data.ticker,
+                    design: data.design,
+                    footer: data.footer,
+                    settings: data.settings
+                }
+            });
         }
-        for (const store of allStores) await supabaseClient.from('stores').upsert(store);
-        const allProducts = [];
-        for (const storeId in data.products) {
-            for (const prod of data.products[storeId]) allProducts.push({ ...prod, storeId });
-        }
-        for (const prod of allProducts) await supabaseClient.from('products').upsert(prod);
-        for (const t of data.testimonials) await supabaseClient.from('testimonials').upsert(t);
-        for (const ad of data.carousel) await supabaseClient.from('carousel').upsert(ad);
-        for (const msg of data.messages) await supabaseClient.from('messages').upsert(msg);
 
-        if (window.broadcastChannel) window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
+        // 2. الفئات (categories)
+        if (allTables || tables.includes('categories')) {
+            if (data.categories && data.categories.length > 0) {
+                await supabaseClient.from('categories').upsert(data.categories);
+            }
+        }
+
+        // 3. المتاجر (stores)
+        if (allTables || tables.includes('stores')) {
+            const allStores = [];
+            for (const cat in data.stores) {
+                for (const store of data.stores[cat]) {
+                    if (!store.banners) store.banners = [];
+                    allStores.push(store);
+                }
+            }
+            if (allStores.length > 0) {
+                await supabaseClient.from('stores').upsert(allStores);
+            }
+        }
+
+        // 4. المنتجات (products)
+        if (allTables || tables.includes('products')) {
+            const allProducts = [];
+            for (const storeId in data.products) {
+                for (const prod of data.products[storeId]) {
+                    allProducts.push({ ...prod, storeId });
+                }
+            }
+            if (allProducts.length > 0) {
+                await supabaseClient.from('products').upsert(allProducts);
+            }
+        }
+
+        // 5. التقييمات (testimonials)
+        if (allTables || tables.includes('testimonials')) {
+            if (data.testimonials && data.testimonials.length > 0) {
+                await supabaseClient.from('testimonials').upsert(data.testimonials);
+            }
+        }
+
+        // 6. الإعلانات الدوارة (carousel)
+        if (allTables || tables.includes('carousel')) {
+            if (data.carousel && data.carousel.length > 0) {
+                await supabaseClient.from('carousel').upsert(data.carousel);
+            }
+        }
+
+        // 7. رسائل الاتصال (messages)
+        if (allTables || tables.includes('messages')) {
+            if (data.messages && data.messages.length > 0) {
+                await supabaseClient.from('messages').upsert(data.messages);
+            }
+        }
+
+        // إعلام التبويبات الأخرى
+        if (window.broadcastChannel) {
+            window.broadcastChannel.postMessage({ type: 'DB_UPDATE', timestamp: Date.now() });
+        }
     } catch (e) {
         logAdminError(e, 'pushToSupabase');
         throw e;
@@ -409,12 +507,12 @@ function saveUsers() { localStorage.setItem('users', JSON.stringify(users)); }
 function getCurrencySymbol() {
     if (!window.appData) return "ر.س";
     const symbols = { SAR: "ر.س", USD: "$", OMR: "ر.ع.", QAR: "ر.ق", AED: "د.إ" };
-    return symbols[window.appData.settings.currency] || "ر.س";
+    return symbols[window.appData.settings?.currency] || "ر.س";
 }
 
 function translate(key) {
     if (!window.appData) return key;
-    if (window.appData.settings.language === 'en') {
+    if (window.appData.settings?.language === 'en') {
         const translations = {
             'عدد الزوار': 'Visitors', 'سلة التسوق': 'Shopping Cart', 'الإجمالي': 'Total',
             'إرسال عبر واتساب': 'Send via WhatsApp', 'إرسال عبر البريد': 'Send via Email',
@@ -597,28 +695,30 @@ window.addToCart = function(product, appData) {
 function applyDesignSettings() {
     if (!window.appData) return;
     const root = document.documentElement;
-    root.style.setProperty('--category-bg', window.appData.design.categoryBg);
-    root.style.setProperty('--category-text', window.appData.design.categoryText);
-    root.style.setProperty('--category-font-size', window.appData.design.categoryFontSize);
-    root.style.setProperty('--store-bg', window.appData.design.storeBg);
-    root.style.setProperty('--store-text', window.appData.design.storeText);
-    root.style.setProperty('--store-font-size', window.appData.design.storeFontSize);
-    root.style.setProperty('--product-bg', window.appData.design.productBg);
-    root.style.setProperty('--product-text', window.appData.design.productText);
-    root.style.setProperty('--product-font-size', window.appData.design.productFontSize);
-    root.style.setProperty('--ad-bg', window.appData.design.adBg);
-    root.style.setProperty('--ad-text', window.appData.design.adText);
-    root.style.setProperty('--ad-font-size', window.appData.design.adFontSize);
-    root.style.setProperty('--general-font-size', window.appData.design.generalFontSize);
-    document.body.style.fontSize = window.appData.design.generalFontSize;
+    const d = window.appData.design || {};
+    root.style.setProperty('--category-bg', d.categoryBg || 'linear-gradient(145deg, #f9eef7, #f3d9e8)');
+    root.style.setProperty('--category-text', d.categoryText || '#9b4d96');
+    root.style.setProperty('--category-font-size', d.categoryFontSize || '2rem');
+    root.style.setProperty('--store-bg', d.storeBg || '#ffffff');
+    root.style.setProperty('--store-text', d.storeText || '#1e293b');
+    root.style.setProperty('--store-font-size', d.storeFontSize || '1.3rem');
+    root.style.setProperty('--product-bg', d.productBg || '#ffffff');
+    root.style.setProperty('--product-text', d.productText || '#1e293b');
+    root.style.setProperty('--product-font-size', d.productFontSize || '0.85rem');
+    root.style.setProperty('--ad-bg', d.adBg || 'linear-gradient(90deg, #fbbf24, #f59e0b)');
+    root.style.setProperty('--ad-text', d.adText || '#0f172a');
+    root.style.setProperty('--ad-font-size', d.adFontSize || '1.1rem');
+    root.style.setProperty('--general-font-size', d.generalFontSize || '1rem');
+    document.body.style.fontSize = d.generalFontSize || '1rem';
 }
 
 let headerInterval, currentHeaderIndex = 0;
 function changeHeaderBackground() {
     const header = document.getElementById('mainHeader');
     if (window.appData && window.appData.header.images && window.appData.header.images.length > 0) {
-        header.style.backgroundImage = `url('${window.appData.header.images[currentHeaderIndex]}')`;
-        currentHeaderIndex = (currentHeaderIndex + 1) % window.appData.header.images.length;
+        const images = window.appData.header.images;
+        header.style.backgroundImage = `url('${images[currentHeaderIndex]}')`;
+        currentHeaderIndex = (currentHeaderIndex + 1) % images.length;
     }
 }
 function startHeaderInterval() {
@@ -631,7 +731,7 @@ function startCarousel() {
     // ستُستخدم من index.html
 }
 
-// ================== PWA: رسالة تثبيت منبثقة أعلى الشاشة (نسخة مصغرة) ==================
+// ================== PWA: رسالة تثبيت منبثقة أعلى الشاشة ==================
 let deferredPrompt;
 let installToastTimeout;
 
@@ -775,7 +875,8 @@ window.common = {
     applyPartialUpdates,
     updateElementImage,
     adminErrors,
-    DEFAULT_WHATSAPP_NUMBER
+    DEFAULT_WHATSAPP_NUMBER,
+    ensureSocialMedia
 };
 
 // دوال عالمية للمكالمات المباشرة
@@ -796,6 +897,7 @@ window.applyPartialUpdates = applyPartialUpdates;
 window.updateElementImage = updateElementImage;
 window.updateCartDisplay = updateCartDisplay;
 window.removeFromCart = removeFromCart;
+window.ensureSocialMedia = ensureSocialMedia;
 
 // تسجيل Service Worker
 if ('serviceWorker' in navigator) {
@@ -804,4 +906,4 @@ if ('serviceWorker' in navigator) {
             .then(reg => console.log('SW مسجل'))
             .catch(err => console.warn('فشل تسجيل SW', err));
     });
-                        }
+        }
