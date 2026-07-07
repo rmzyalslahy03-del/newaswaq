@@ -1258,6 +1258,18 @@
 
     <script src="common.js"></script>
     <script>
+        // ====== دالة sanitize احتياطية (لحماية من غياب DOMPurify) ======
+        function safeSanitize(text) {
+            if (typeof DOMPurify !== 'undefined' && DOMPurify.sanitize) {
+                return DOMPurify.sanitize(text);
+            }
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        window.safeSanitize = safeSanitize;
+
         let appData = null;
 
         // ============= دالة حقن كود التتبع =============
@@ -1292,7 +1304,7 @@
             if (!appData) return;
             document.getElementById('headerTitle').textContent = appData.header.title;
             document.getElementById('headerSubtitle').textContent = appData.header.subtitle;
-            document.getElementById('tickerContent').innerHTML = appData.ticker.map(t => `<span>${DOMPurify.sanitize(t)}</span>`).join('');
+            document.getElementById('tickerContent').innerHTML = appData.ticker.map(t => `<span>${safeSanitize(t)}</span>`).join('');
 
             // عرض العلم السعودي (دائري)
             const flagContainer = document.getElementById('saudiFlagContainer');
@@ -1313,7 +1325,7 @@
             // عرض المسابقات
             if (appData.settings.contests && appData.settings.contests.length > 0) {
                 document.getElementById('contestsBar').style.display = 'block';
-                const content = appData.settings.contests.map(c => `<span class="contest-item"><i class="fas fa-trophy"></i> ${DOMPurify.sanitize(c.name)} - ${DOMPurify.sanitize(c.description)} (ينتهي: ${DOMPurify.sanitize(c.endDate)})</span>`).join('');
+                const content = appData.settings.contests.map(c => `<span class="contest-item"><i class="fas fa-trophy"></i> ${safeSanitize(c.name)} - ${safeSanitize(c.description)} (ينتهي: ${safeSanitize(c.endDate)})</span>`).join('');
                 document.getElementById('contestsContent').innerHTML = content;
             } else document.getElementById('contestsBar').style.display = 'none';
 
@@ -1346,7 +1358,7 @@
                 section.dataset.categoryId = cat.id;
                 section.style.background = `var(--category-bg)`;
                 let adHtml = '';
-                if (cat.adEnabled && cat.adText) adHtml = `<div class="category-ticker"><div class="category-ticker-content">${DOMPurify.sanitize(cat.adText)}</div></div>`;
+                if (cat.adEnabled && cat.adText) adHtml = `<div class="category-ticker"><div class="category-ticker-content">${safeSanitize(cat.adText)}</div></div>`;
                 section.innerHTML = `<div class="category-header"><h2 class="category-title" style="color:var(--category-text); border-right-color:var(--category-text)"><i class="${cat.icon}"></i> ${catName}</h2><img src="${cat.featuredImage}" class="category-featured-image" loading="lazy"></div>${adHtml}<div class="stores-grid" id="storesGrid-${cat.id}"></div>`;
                 const storesGrid = section.querySelector(`#storesGrid-${cat.id}`);
                 stores.forEach(store => {
@@ -1375,7 +1387,7 @@
             appData.testimonials.forEach(t => {
                 let starsHtml = '';
                 for (let s = 0; s < 5; s++) starsHtml += s < t.rating ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>';
-                testimonialsTrack.innerHTML += `<div class="testimonial-card"><img src="${t.image}" class="customer-img" loading="lazy"><div class="customer-name">${t.name}</div><div class="customer-rating">${starsHtml}</div><div class="customer-review">${t.review}</div></div>`;
+                testimonialsTrack.innerHTML += `<div class="testimonial-card"><img src="${t.image}" class="customer-img" loading="lazy"><div class="customer-name">${t.name}</div><div class="customer-rating">${starsHtml}</div><div class="customer-review">${safeSanitize(t.review)}</div></div>`;
             });
 
             // عرض شارات الثقة
@@ -1567,7 +1579,7 @@
                         <div class="banner-text" data-banner-id="${banner.id}" data-store-id="${store.id}">
                             <div class="category-ticker">
                                 <div class="category-ticker-content">
-                                    ${DOMPurify.sanitize(banner.content)}
+                                    ${safeSanitize(banner.content)}
                                 </div>
                             </div>
                         </div>`;
@@ -1750,11 +1762,11 @@
                 <h2 style="color:#0f172a; margin-bottom:20px;">سياسة السوق</h2>
                 <div style="background:white; border-radius:20px; padding:20px; line-height:1.8;">
                     <h3>شروط البيع والشراء</h3>
-                    <p>${DOMPurify.sanitize(policy.terms || '')}</p>
+                    <p>${safeSanitize(policy.terms || '')}</p>
                     <h3>سياسة الاسترجاع</h3>
-                    <p>${DOMPurify.sanitize(policy.returns || '')}</p>
+                    <p>${safeSanitize(policy.returns || '')}</p>
                     <h3>شروط الاستخدام</h3>
-                    <p>${DOMPurify.sanitize(policy.usage || '')}</p>
+                    <p>${safeSanitize(policy.usage || '')}</p>
                 </div>
             </div>`;
         }
@@ -1770,11 +1782,11 @@
                 <h2 style="color:#0f172a; margin-bottom:20px;">من نحن</h2>
                 <div style="background:white; border-radius:20px; padding:20px; line-height:1.8;">
                     <h3>نبذة عن السوق</h3>
-                    <p>${DOMPurify.sanitize(about.description || '')}</p>
+                    <p>${safeSanitize(about.description || '')}</p>
                     <h3>رسالتنا</h3>
-                    <p>${DOMPurify.sanitize(about.mission || '')}</p>
+                    <p>${safeSanitize(about.mission || '')}</p>
                     <h3>رؤيتنا</h3>
-                    <p>${DOMPurify.sanitize(about.vision || '')}</p>
+                    <p>${safeSanitize(about.vision || '')}</p>
                 </div>
             </div>`;
         }
