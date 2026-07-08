@@ -178,21 +178,142 @@ async function loadAppData() {
             window.appData = await fetchFromSupabase();
             if (window.appData) await saveToIndexedDB(window.appData);
         } else {
-            throw new Error('لا توجد بيانات محلية ولا اتصال');
+            // في حالة عدم وجود اتصال ولا بيانات محلية، ننشئ بيانات افتراضية مؤقتة
+            window.appData = createDefaultData();
+            await saveToIndexedDB(window.appData);
         }
     }
     return window.appData;
 }
 
-// ================== جلب البيانات من Supabase ==================
+// ================== إنشاء بيانات افتراضية للاستخدام عند الفشل ==================
+function createDefaultData() {
+    return {
+        header: {
+            title: 'مجمع أسواق ريادة المستهلك',
+            subtitle: 'أفضل المتاجر والمنتجات بأفضل الأسعار',
+            images: ['https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=80']
+        },
+        ticker: ['مرحباً بكم في مجمع أسواق ريادة المستهلك', 'أفضل العروض بانتظاركم'],
+        design: {
+            categoryBg: 'linear-gradient(145deg, #f9eef7, #f3d9e8)',
+            categoryText: '#9b4d96',
+            categoryFontSize: '2rem',
+            storeBg: '#ffffff',
+            storeText: '#1e293b',
+            storeFontSize: '1.3rem',
+            productBg: '#ffffff',
+            productText: '#1e293b',
+            productFontSize: '0.85rem',
+            adBg: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
+            adText: '#0f172a',
+            adFontSize: '1.1rem',
+            generalFontSize: '1rem'
+        },
+        categories: [],
+        stores: {},
+        products: {},
+        testimonials: [],
+        footer: {
+            email: 'info@example.com',
+            phone: '966500000000',
+            whatsapp: '966500000000',
+            socialMedia: [
+                { platform: 'whatsapp', url: 'https://wa.me/967778562099', active: true },
+                { platform: 'facebook', url: '#', active: true },
+                { platform: 'twitter', url: '#', active: true },
+                { platform: 'instagram', url: '#', active: true }
+            ],
+            payments: ['fab fa-cc-visa', 'fab fa-cc-mastercard', 'fab fa-apple-pay']
+        },
+        settings: {
+            currency: 'SAR',
+            language: 'ar',
+            showSaudiFlag: true,
+            cartEnabled: true,
+            enableUserProfile: true,
+            orderMethods: {
+                whatsapp: true,
+                email: true,
+                chat: true
+            },
+            contactEmail: 'admin@example.com',
+            whatsappNumber: '967778562099',
+            visitorCount: 0,
+            saudiFlagUrl: '',
+            trackingCode: '',
+            contests: [],
+            trustBadges: [],
+            marketPolicy: {
+                terms: 'هنا تكتب شروط البيع والشراء...',
+                returns: 'هنا تكتب سياسة الاسترجاع والاستبدال...',
+                usage: 'هنا تكتب شروط الاستخدام...'
+            },
+            aboutUs: {
+                description: 'مرحباً بكم في مجمع أسواق ريادة المستهلك...',
+                mission: 'تقديم أفضل تجربة تسوق للمستهلكين...',
+                vision: 'الريادة في الأسواق الإلكترونية...'
+            }
+        },
+        carousel: [],
+        messages: []
+    };
+}
+
+// ================== جلب البيانات من Supabase (محسّنة للزوار الجدد) ==================
 async function fetchFromSupabase() {
     try {
+        // 1. محاولة جلب الإعدادات
         const { data: settings, error: settingsErr } = await supabaseClient
             .from('settings')
             .select('data')
             .eq('id', 'main')
             .single();
-        if (settingsErr && settingsErr.code !== 'PGRST116') throw settingsErr;
+
+        // 2. إذا فشل جلب الإعدادات (لا توجد أو ممنوعة بـ RLS)
+        if (settingsErr) {
+            console.warn('⚠️ فشل جلب الإعدادات من Supabase (ربما RLS):', settingsErr.message);
+            // نحاول جلب بقية البيانات (الفئات والمتاجر والمنتجات) مباشرة
+            const [categoriesRes, storesRes, productsRes] = await Promise.all([
+                supabaseClient.from('categories').select('*'),
+                supabaseClient.from('stores').select('*'),
+                supabaseClient.from('products').select('*')
+            ]);
+
+            const emptyStructure = createDefaultData();
+            if (!categoriesRes.error) emptyStructure.categories = categoriesRes.data || [];
+            if (!storesRes.error) {
+                const storesMap = {};
+                storesRes.data.forEach(store => {
+                    if (!storesMap[store.category]) storesMap[store.category] = [];
+                    if (!store.banners) store.banners = [];
+                    storesMap[store.category].push(store);
+                });
+                emptyStructure.stores = storesMap;
+            }
+            if (!productsRes.error) {
+                const productsMap = {};
+                productsRes.data.forEach(prod => {
+                    if (!productsMap[prod.storeId]) productsMap[prod.storeId] = [];
+                    productsMap[prod.storeId].push(prod);
+                });
+                emptyStructure.products = productsMap;
+            }
+
+            // محاولة جلب التقييمات والإعلانات أيضاً
+            try {
+                const testimonialsRes = await supabaseClient.from('testimonials').select('*');
+                if (!testimonialsRes.error) emptyStructure.testimonials = testimonialsRes.data || [];
+            } catch (e) {}
+            try {
+                const carouselRes = await supabaseClient.from('carousel').select('*');
+                if (!carouselRes.error) emptyStructure.carousel = carouselRes.data || [];
+            } catch (e) {}
+
+            return emptyStructure;
+        }
+
+        // 3. إذا كانت الإعدادات موجودة، نواصل الجلب الكامل
         if (!settings) return null;
 
         const [categoriesRes, storesRes, productsRes, testimonialsRes, carouselRes, messagesRes] = await Promise.all([
@@ -234,18 +355,10 @@ async function fetchFromSupabase() {
         };
 
         // التأكد من وجود الحقول المطلوبة في settings
-        if (!result.settings.visitorCount) {
-            result.settings.visitorCount = 0;
-        }
-        if (!result.settings.saudiFlagUrl) {
-            result.settings.saudiFlagUrl = '';
-        }
-        if (!result.settings.trackingCode) {
-            result.settings.trackingCode = '';
-        }
-        if (!result.settings.whatsappNumber) {
-            result.settings.whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
-        }
+        if (!result.settings.visitorCount) result.settings.visitorCount = 0;
+        if (!result.settings.saudiFlagUrl) result.settings.saudiFlagUrl = '';
+        if (!result.settings.trackingCode) result.settings.trackingCode = '';
+        if (!result.settings.whatsappNumber) result.settings.whatsappNumber = DEFAULT_WHATSAPP_NUMBER;
         if (!result.settings.marketPolicy) {
             result.settings.marketPolicy = {
                 terms: "هنا تكتب شروط البيع والشراء...",
@@ -261,13 +374,13 @@ async function fetchFromSupabase() {
             };
         }
 
-        // التأكد من وجود socialMedia
         ensureSocialMedia(result);
-
         return result;
+
     } catch (e) {
         logAdminError(e, 'fetchFromSupabase');
-        throw e;
+        console.error('❌ فشل جلب البيانات من Supabase، سيتم استخدام بيانات فارغة مؤقتاً', e);
+        return createDefaultData();
     }
 }
 
@@ -523,7 +636,8 @@ function translate(key) {
             'الهاتف': 'Phone', 'خدمات الدفع': 'Payment Methods', 'طرق دفع آمنة ومتعددة': 'Secure multiple payment methods',
             'جميع الحقوق محفوظة': 'All rights reserved', 'مجمع أسواق ريادة المستهلك': 'Consumer Leadership Markets',
             'أفضل المتاجر والمنتجات بأفضل الأسعار': 'Best stores and products at best prices',
-            'العودة للرئيسية': 'Back to Home', 'زيارة المتجر الأصلي': 'Visit Original Store'
+            'العودة للرئيسية': 'Back to Home', 'زيارة المتجر الأصلي': 'Visit Original Store', 'زيارة': 'Visit',
+            'زيارة المتجر': 'Visit Store', 'إضافة للسلة': 'Add to cart'
         };
         return translations[key] || key;
     }
@@ -879,7 +993,8 @@ window.common = {
     adminErrors,
     DEFAULT_WHATSAPP_NUMBER,
     ensureSocialMedia,
-    STORAGE_BUCKET
+    STORAGE_BUCKET,
+    createDefaultData
 };
 
 // دوال عالمية للمكالمات المباشرة
@@ -901,6 +1016,8 @@ window.updateElementImage = updateElementImage;
 window.updateCartDisplay = updateCartDisplay;
 window.removeFromCart = removeFromCart;
 window.ensureSocialMedia = ensureSocialMedia;
+window.createDefaultData = createDefaultData;
+window.fetchFromSupabase = fetchFromSupabase;
 
 // تسجيل Service Worker
 if ('serviceWorker' in navigator) {
