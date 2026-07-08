@@ -469,10 +469,9 @@
         <i class="fas fa-eye"></i> معاينة التغييرات
     </button>
 
-    <!-- تحميل common.js أولاً (بدون defer) -->
+    <!-- تحميل common.js أولاً -->
     <script src="common.js"></script>
 
-    <!-- الكود الرئيسي (يُشغل بعد تحميل common.js والصفحة) -->
     <script>
         // ============================================================
         // دالة مساعدة لإعادة تعيين الحقول في أي حاوية (div)
@@ -481,7 +480,6 @@
             const container = document.getElementById(containerId);
             if (!container) return;
             
-            // إعادة تعيين جميع المدخلات (باستثناء المخفية)
             const inputs = container.querySelectorAll('input:not([type="hidden"]), textarea, select');
             inputs.forEach(input => {
                 if (input.type === 'checkbox' || input.type === 'radio') {
@@ -493,7 +491,6 @@
                 }
             });
             
-            // إظهار زر الإضافة وإخفاء زر التحديث (إن وجدا)
             const addBtn = container.querySelector('[id$="addCategoryBtn"], [id$="addStoreBtn"], [id$="addProductBtn"], [id$="addCarouselBtn"], [id$="addTestimonialBtn"], [id$="addBannerBtn"], [id$="addContestBtn"]');
             const updateBtn = container.querySelector('[id$="updateCategoryBtn"], [id$="updateStoreBtn"], [id$="updateProductBtn"], [id$="updateCarouselBtn"], [id$="updateTestimonialBtn"], [id$="updateBannerBtn"], [id$="updateContestBtn"]');
             if (addBtn) addBtn.style.display = 'block';
@@ -501,22 +498,25 @@
         }
 
         // ============================================================
+        // توليد معرف فريد (string) بدلاً من number لتجنب مشكلة النطاق
+        // ============================================================
+        function generateId() {
+            return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+        }
+
+        // ============================================================
         // الانتظار حتى تحميل الصفحة بالكامل و common.js
         // ============================================================
         window.onload = function() {
-            // التحقق من وجود common
             if (typeof common === 'undefined') {
                 alert('❌ خطأ: لم يتم تحميل common.js. تأكد من وجود الملف في نفس المجلد.');
                 console.error('common.js غير موجود أو به خطأ.');
                 return;
             }
-
-            // تهيئة لوحة التحكم
             initializeAdminPanel();
         };
 
         function initializeAdminPanel() {
-            // ===== المتغيرات العامة =====
             let appData = null;
             let currentEditStoreId = null;
             let currentEditProductStoreId = null;
@@ -707,30 +707,17 @@
                 updateFlagPreview(currentUrl);
 
                 dropZone.addEventListener('click', () => fileInput.click());
-
-                dropZone.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    dropZone.style.borderColor = '#10b981';
-                    dropZone.style.background = '#1e293b';
-                });
-                dropZone.addEventListener('dragleave', () => {
-                    dropZone.style.borderColor = '#fbbf24';
-                    dropZone.style.background = '#1e293b';
-                });
+                dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#10b981'; });
+                dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = '#fbbf24'; });
                 dropZone.addEventListener('drop', async (e) => {
                     e.preventDefault();
                     dropZone.style.borderColor = '#fbbf24';
-                    dropZone.style.background = '#1e293b';
                     const files = e.dataTransfer.files;
-                    if (files.length > 0) {
-                        await handleSaudiFlagFile(files[0]);
-                    }
+                    if (files.length > 0) await handleSaudiFlagFile(files[0]);
                 });
 
                 fileInput.addEventListener('change', async (e) => {
-                    if (e.target.files.length > 0) {
-                        await handleSaudiFlagFile(e.target.files[0]);
-                    }
+                    if (e.target.files.length > 0) await handleSaudiFlagFile(e.target.files[0]);
                 });
 
                 async function handleSaudiFlagFile(file) {
@@ -765,9 +752,7 @@
                     if (confirm('هل أنت متأكد من إزالة العلم؟')) {
                         try {
                             const oldUrl = appData?.settings?.saudiFlagUrl;
-                            if (oldUrl) {
-                                await common.deleteImage(oldUrl);
-                            }
+                            if (oldUrl) await common.deleteImage(oldUrl);
                             appData.settings.saudiFlagUrl = '';
                             changedTables.add('settings');
                             await saveToSupabaseAdmin(['settings']);
@@ -813,7 +798,7 @@
                 container.innerHTML = html;
             }
 
-            // ===== دوال ملء الحقول (مع قيم افتراضية) =====
+            // ===== دوال ملء الحقول =====
             function populateGeneralSettings() {
                 if (!appData) return;
                 document.getElementById('currencySelect').value = appData.settings.currency || 'SAR';
@@ -825,7 +810,7 @@
                 document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods?.email !== undefined ? appData.settings.orderMethods.email : true;
                 document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods?.chat !== undefined ? appData.settings.orderMethods.chat : true;
                 document.getElementById('contactEmail').value = appData.settings.contactEmail || '';
-                document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || (window.DEFAULT_WHATSAPP_NUMBER || '967778562099');
+                document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || '967778562099';
                 document.getElementById('trustBadgesInput').value = (appData.settings.trustBadges || []).join('\n');
                 document.getElementById('trackingCode').value = appData.settings.trackingCode || '';
 
@@ -968,7 +953,7 @@
                     products.forEach(prod => {
                         const div = document.createElement('div');
                         div.className = 'admin-item';
-                        div.innerHTML = `<span>${common.sanitizeText(prod.name)} (${common.sanitizeText(store.name)})</span><div><button class="edit" onclick="editProduct('${storeId}', ${prod.id})">تعديل</button><button onclick="deleteProduct('${storeId}', ${prod.id})">حذف</button></div>`;
+                        div.innerHTML = `<span>${common.sanitizeText(prod.name)} (${common.sanitizeText(store.name)})</span><div><button class="edit" onclick="editProduct('${storeId}', '${prod.id}')">تعديل</button><button onclick="deleteProduct('${storeId}', '${prod.id}')">حذف</button></div>`;
                         container.appendChild(div);
                     });
                 }
@@ -979,7 +964,7 @@
                 if (!container) return;
                 container.innerHTML = '';
                 if (appData && appData.carousel) {
-                    (appData.carousel || []).forEach(ad => {
+                    appData.carousel.forEach(ad => {
                         const div = document.createElement('div');
                         div.className = 'admin-item';
                         div.innerHTML = `<span>${common.sanitizeText(ad.name)}</span><div><button class="edit" onclick="editCarousel('${ad.id}')">تعديل</button><button onclick="deleteCarousel('${ad.id}')">حذف</button></div>`;
@@ -1007,7 +992,7 @@
                 if (!container) return;
                 container.innerHTML = '';
                 if (appData && appData.settings && appData.settings.contests) {
-                    (appData.settings.contests || []).forEach((contest, idx) => {
+                    appData.settings.contests.forEach((contest, idx) => {
                         const div = document.createElement('div');
                         div.className = 'admin-item';
                         div.innerHTML = `<span>${common.sanitizeText(contest.name)}</span><div><button class="edit" onclick="editContest(${idx})">تعديل</button><button onclick="deleteContest(${idx})">حذف</button></div>`;
@@ -1021,7 +1006,7 @@
                 if (!container) return;
                 container.innerHTML = '';
                 if (appData && appData.settings && appData.settings.trustBadges) {
-                    (appData.settings.trustBadges || []).forEach((badge, idx) => {
+                    appData.settings.trustBadges.forEach((badge, idx) => {
                         const div = document.createElement('div');
                         div.className = 'admin-item';
                         div.innerHTML = `<span><img src="${badge}" style="height:30px;"></span><div><button onclick="deleteTrustBadge(${idx})">حذف</button></div>`;
@@ -1035,7 +1020,7 @@
                 if (!container) return;
                 container.innerHTML = '';
                 if (appData && appData.messages) {
-                    (appData.messages || []).forEach((msg, idx) => {
+                    appData.messages.forEach((msg, idx) => {
                         const div = document.createElement('div');
                         div.className = 'admin-item';
                         div.innerHTML = `<div><strong>${common.sanitizeText(msg.name)}</strong><br>${common.sanitizeText(msg.email)}<br>${common.sanitizeText(msg.subject)}<br>${common.sanitizeText(msg.message)}<br><small>${msg.date}</small></div><div><button onclick="deleteMessage(${idx})">حذف</button></div>`;
@@ -1182,7 +1167,7 @@
                 }
 
                 const newBanner = {
-                    id: 'banner-' + Date.now(),
+                    id: generateId(),
                     type,
                     content,
                     images,
@@ -1196,7 +1181,7 @@
                 changedTables.add('stores');
                 await saveToSupabaseAdmin(['stores']);
                 refreshBannerList(storeId);
-                document.getElementById('bannerForm').reset();
+                resetFormFields('bannerForm');
                 document.getElementById('addBannerBtn').style.display = 'block';
                 document.getElementById('updateBannerBtn').style.display = 'none';
                 showToast('تم إضافة الإعلان', 'success', true);
@@ -1267,8 +1252,7 @@
                 if (!appData) return;
                 if (confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم حذف جميع المتاجر والمنتجات المرتبطة بها.')) {
                     try {
-                        const { error } = await common.supabaseClient.from('categories').delete().eq('id', id);
-                        if (error) throw error;
+                        await common.supabaseClient.from('categories').delete().eq('id', id);
                         const catToDelete = appData.categories.find(c => c.id === id);
                         appData.categories = appData.categories.filter(c => c.id !== id);
                         if (catToDelete && appData.stores[catToDelete.name]) delete appData.stores[catToDelete.name];
@@ -1320,8 +1304,7 @@
                 if (!appData) return;
                 if (confirm('هل أنت متأكد من حذف هذا المتجر؟ سيتم حذف جميع منتجاته.')) {
                     try {
-                        const { error } = await common.supabaseClient.from('stores').delete().eq('id', storeId);
-                        if (error) throw error;
+                        await common.supabaseClient.from('stores').delete().eq('id', storeId);
                         for (let cat in appData.stores) {
                             const index = appData.stores[cat].findIndex(s => s.id === storeId);
                             if (index !== -1) {
@@ -1346,7 +1329,7 @@
                 if (!appData) return;
                 currentEditProductStoreId = storeId;
                 currentEditProductId = productId;
-                const product = appData.products[storeId].find(p => p.id == productId);
+                const product = appData.products[storeId].find(p => p.id === productId);
                 if (!product) return;
                 document.getElementById('productName').value = product.name;
                 document.getElementById('productOldPrice').value = product.oldPrice;
@@ -1361,9 +1344,8 @@
                 if (!appData) return;
                 if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
                     try {
-                        const { error } = await common.supabaseClient.from('products').delete().eq('storeId', storeId).eq('id', productId);
-                        if (error) throw error;
-                        const index = appData.products[storeId].findIndex(p => p.id == productId);
+                        await common.supabaseClient.from('products').delete().eq('storeId', storeId).eq('id', productId);
+                        const index = appData.products[storeId].findIndex(p => p.id === productId);
                         if (index !== -1) {
                             appData.products[storeId].splice(index, 1);
                             changedTables.add('products');
@@ -1388,7 +1370,7 @@
                     return;
                 }
                 const newCat = {
-                    id: 'cat' + Date.now(),
+                    id: generateId(),
                     name: name,
                     icon: document.getElementById('categoryIcon').value || 'fas fa-tag',
                     slug: slug,
@@ -1401,16 +1383,13 @@
                     adEnabled: document.getElementById('categoryAdEnabled').checked
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('categories').insert(newCat);
-                    if (error) throw error;
+                    await common.supabaseClient.from('categories').insert(newCat);
                     appData.categories.push(newCat);
                     if (!appData.stores[newCat.name]) appData.stores[newCat.name] = [];
                     changedTables.add('categories');
                     await saveToSupabaseAdmin(['categories']);
                     refreshAllLists();
                     resetFormFields('categoryForm');
-                    document.getElementById('addCategoryBtn').style.display = 'block';
-                    document.getElementById('updateCategoryBtn').style.display = 'none';
                     showToast('تم إضافة الفئة', 'success', true);
                 } catch (err) {
                     showToast("خطأ في الإضافة: " + err.message, 'error', true);
@@ -1438,8 +1417,7 @@
                     adEnabled: document.getElementById('categoryAdEnabled').checked
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('categories').update(updatedCat).eq('id', id);
-                    if (error) throw error;
+                    await common.supabaseClient.from('categories').update(updatedCat).eq('id', id);
                     appData.categories[catIndex] = updatedCat;
                     if (oldName !== newName && appData.stores[oldName]) {
                         appData.stores[newName] = appData.stores[oldName];
@@ -1449,8 +1427,6 @@
                     await saveToSupabaseAdmin(['categories']);
                     refreshAllLists();
                     resetFormFields('categoryForm');
-                    document.getElementById('addCategoryBtn').style.display = 'block';
-                    document.getElementById('updateCategoryBtn').style.display = 'none';
                     showToast('تم تحديث الفئة', 'success', true);
                 } catch (err) {
                     showToast("خطأ في التحديث: " + err.message, 'error', true);
@@ -1463,9 +1439,8 @@
                 if (!category || category === 'اختر الفئة') return alert('اختر الفئة أولاً');
                 const name = document.getElementById('storeName').value;
                 if (!name) return alert('اسم المتجر مطلوب');
-                const newId = 'store-' + Date.now();
                 const newStore = {
-                    id: newId,
+                    id: generateId(),
                     name: name,
                     category: category,
                     logo: document.getElementById('storeLogo').value || 'https://via.placeholder.com/100',
@@ -1482,18 +1457,15 @@
                     numStrips: parseInt(document.getElementById('storeNumStrips').value)
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('stores').insert(newStore);
-                    if (error) throw error;
+                    await common.supabaseClient.from('stores').insert(newStore);
                     if (!appData.stores[category]) appData.stores[category] = [];
                     appData.stores[category].push(newStore);
-                    appData.products[newId] = [];
+                    appData.products[newStore.id] = [];
                     changedTables.add('stores');
                     changedTables.add('products');
                     await saveToSupabaseAdmin(['stores', 'products']);
                     refreshAllLists();
                     resetFormFields('storeForm');
-                    document.getElementById('addStoreBtn').style.display = 'block';
-                    document.getElementById('updateStoreBtn').style.display = 'none';
                     showToast('تم إضافة المتجر', 'success', true);
                 } catch (err) {
                     showToast("خطأ في إضافة المتجر: " + err.message, 'error', true);
@@ -1519,15 +1491,12 @@
                     numStrips: parseInt(document.getElementById('storeNumStrips').value)
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('stores').update(updatedStore).eq('id', currentEditStoreId);
-                    if (error) throw error;
+                    await common.supabaseClient.from('stores').update(updatedStore).eq('id', currentEditStoreId);
                     Object.assign(store, updatedStore);
                     changedTables.add('stores');
                     await saveToSupabaseAdmin(['stores']);
                     refreshAllLists();
                     resetFormFields('storeForm');
-                    document.getElementById('addStoreBtn').style.display = 'block';
-                    document.getElementById('updateStoreBtn').style.display = 'none';
                     currentEditStoreId = null;
                     showToast('تم تحديث المتجر', 'success', true);
                 } catch (err) {
@@ -1541,9 +1510,8 @@
                 if (!storeId || storeId === 'اختر المتجر') return alert('اختر المتجر أولاً');
                 const name = document.getElementById('productName').value;
                 if (!name) return alert('اسم المنتج مطلوب');
-                const newId = Date.now();
                 const newProduct = {
-                    id: newId,
+                    id: generateId(),
                     storeId: storeId,
                     name: name,
                     oldPrice: parseFloat(document.getElementById('productOldPrice').value),
@@ -1552,16 +1520,13 @@
                     link: document.getElementById('productLink').value || '#'
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('products').insert(newProduct);
-                    if (error) throw error;
+                    await common.supabaseClient.from('products').insert(newProduct);
                     if (!appData.products[storeId]) appData.products[storeId] = [];
                     appData.products[storeId].push(newProduct);
                     changedTables.add('products');
                     await saveToSupabaseAdmin(['products']);
                     refreshAllLists();
                     resetFormFields('productForm');
-                    document.getElementById('addProductBtn').style.display = 'block';
-                    document.getElementById('updateProductBtn').style.display = 'none';
                     showToast('تم إضافة المنتج', 'success', true);
                 } catch (err) {
                     showToast("خطأ في إضافة المنتج: " + err.message, 'error', true);
@@ -1571,7 +1536,7 @@
 
             document.getElementById('updateProductBtn').addEventListener('click', async () => {
                 if (!currentEditProductStoreId || !currentEditProductId) return;
-                const product = appData.products[currentEditProductStoreId].find(p => p.id == currentEditProductId);
+                const product = appData.products[currentEditProductStoreId].find(p => p.id === currentEditProductId);
                 if (!product) return;
                 const updatedProduct = {
                     ...product,
@@ -1582,15 +1547,12 @@
                     link: document.getElementById('productLink').value
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('products').update(updatedProduct).eq('storeId', currentEditProductStoreId).eq('id', currentEditProductId);
-                    if (error) throw error;
+                    await common.supabaseClient.from('products').update(updatedProduct).eq('storeId', currentEditProductStoreId).eq('id', currentEditProductId);
                     Object.assign(product, updatedProduct);
                     changedTables.add('products');
                     await saveToSupabaseAdmin(['products']);
                     refreshAllLists();
                     resetFormFields('productForm');
-                    document.getElementById('addProductBtn').style.display = 'block';
-                    document.getElementById('updateProductBtn').style.display = 'none';
                     currentEditProductStoreId = null;
                     currentEditProductId = null;
                     showToast('تم تحديث المنتج', 'success', true);
@@ -1605,7 +1567,7 @@
                 const name = document.getElementById('carouselName').value;
                 if (!name) return alert('اسم الإعلان مطلوب');
                 const newAd = {
-                    id: 'carousel-' + Date.now(),
+                    id: generateId(),
                     name: name,
                     link: document.getElementById('carouselLink').value,
                     image: document.getElementById('carouselImage').value,
@@ -1613,16 +1575,13 @@
                     active: document.getElementById('carouselActive').checked
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('carousel').insert(newAd);
-                    if (error) throw error;
+                    await common.supabaseClient.from('carousel').insert(newAd);
                     if (!appData.carousel) appData.carousel = [];
                     appData.carousel.push(newAd);
                     changedTables.add('carousel');
                     await saveToSupabaseAdmin(['carousel']);
                     refreshAllLists();
                     resetFormFields('carouselForm');
-                    document.getElementById('addCarouselBtn').style.display = 'block';
-                    document.getElementById('updateCarouselBtn').style.display = 'none';
                     showToast('تم إضافة الإعلان', 'success', true);
                 } catch (err) {
                     showToast("خطأ في الإضافة: " + err.message, 'error', true);
@@ -1643,15 +1602,12 @@
                     active: document.getElementById('carouselActive').checked
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('carousel').update(updatedAd).eq('id', currentEditCarouselId);
-                    if (error) throw error;
+                    await common.supabaseClient.from('carousel').update(updatedAd).eq('id', currentEditCarouselId);
                     appData.carousel[index] = updatedAd;
                     changedTables.add('carousel');
                     await saveToSupabaseAdmin(['carousel']);
                     refreshAllLists();
                     resetFormFields('carouselForm');
-                    document.getElementById('addCarouselBtn').style.display = 'block';
-                    document.getElementById('updateCarouselBtn').style.display = 'none';
                     currentEditCarouselId = null;
                     showToast('تم تحديث الإعلان', 'success', true);
                 } catch (err) {
@@ -1664,24 +1620,20 @@
             document.getElementById('addTestimonialBtn').addEventListener('click', async () => {
                 const name = document.getElementById('testimonialName').value;
                 if (!name) return alert('الاسم مطلوب');
-                const newId = Date.now();
                 const newTestimonial = {
-                    id: newId,
+                    id: generateId(),
                     name: name,
                     image: document.getElementById('testimonialImage').value || 'https://via.placeholder.com/100',
                     rating: parseInt(document.getElementById('testimonialRating').value) || 5,
                     review: document.getElementById('testimonialReview').value
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('testimonials').insert(newTestimonial);
-                    if (error) throw error;
+                    await common.supabaseClient.from('testimonials').insert(newTestimonial);
                     appData.testimonials.push(newTestimonial);
                     changedTables.add('testimonials');
                     await saveToSupabaseAdmin(['testimonials']);
                     refreshAllLists();
                     resetFormFields('testimonialForm');
-                    document.getElementById('addTestimonialBtn').style.display = 'block';
-                    document.getElementById('updateTestimonialBtn').style.display = 'none';
                     showToast('تم إضافة التقييم', 'success', true);
                 } catch (err) {
                     showToast("خطأ في الإضافة: " + err.message, 'error', true);
@@ -1691,7 +1643,7 @@
 
             document.getElementById('updateTestimonialBtn').addEventListener('click', async () => {
                 if (!currentEditTestimonialId) return;
-                const index = appData.testimonials.findIndex(t => t.id == currentEditTestimonialId);
+                const index = appData.testimonials.findIndex(t => t.id === currentEditTestimonialId);
                 if (index === -1) return;
                 const updatedTestimonial = {
                     ...appData.testimonials[index],
@@ -1701,15 +1653,12 @@
                     review: document.getElementById('testimonialReview').value
                 };
                 try {
-                    const { error } = await common.supabaseClient.from('testimonials').update(updatedTestimonial).eq('id', currentEditTestimonialId);
-                    if (error) throw error;
+                    await common.supabaseClient.from('testimonials').update(updatedTestimonial).eq('id', currentEditTestimonialId);
                     appData.testimonials[index] = updatedTestimonial;
                     changedTables.add('testimonials');
                     await saveToSupabaseAdmin(['testimonials']);
                     refreshAllLists();
                     resetFormFields('testimonialForm');
-                    document.getElementById('addTestimonialBtn').style.display = 'block';
-                    document.getElementById('updateTestimonialBtn').style.display = 'none';
                     currentEditTestimonialId = null;
                     showToast('تم تحديث التقييم', 'success', true);
                 } catch (err) {
@@ -1733,8 +1682,6 @@
                 await saveToSupabaseAdmin(['settings']);
                 refreshAllLists();
                 resetFormFields('contestForm');
-                document.getElementById('addContestBtn').style.display = 'block';
-                document.getElementById('updateContestBtn').style.display = 'none';
                 showToast('تم إضافة المسابقة', 'success', true);
             });
 
@@ -1750,8 +1697,6 @@
                 await saveToSupabaseAdmin(['settings']);
                 refreshAllLists();
                 resetFormFields('contestForm');
-                document.getElementById('addContestBtn').style.display = 'block';
-                document.getElementById('updateContestBtn').style.display = 'none';
                 showToast('تم تحديث المسابقة', 'success', true);
             });
 
@@ -1780,7 +1725,6 @@
                 appData.settings.contactEmail = document.getElementById('contactEmail').value;
                 appData.settings.whatsappNumber = document.getElementById('whatsappNumber').value.trim();
                 appData.settings.trackingCode = document.getElementById('trackingCode').value.trim();
-
                 changedTables.add('settings');
                 await saveToSupabaseAdmin(['settings']);
                 showToast('تم حفظ الإعدادات العامة', 'success', true);
@@ -1833,7 +1777,6 @@
                 appData.footer.email = document.getElementById('footerEmail').value;
                 appData.footer.phone = document.getElementById('footerPhone').value;
                 appData.footer.whatsapp = document.getElementById('footerWhatsapp').value;
-
                 const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
                 const socialMedia = platforms.map(p => ({
                     platform: p,
@@ -1841,10 +1784,8 @@
                     active: document.getElementById(`social_${p}_active`).checked
                 }));
                 appData.footer.socialMedia = socialMedia;
-
                 const paymentsText = document.getElementById('footerPayments').value;
                 appData.footer.payments = paymentsText.split(',').map(p => p.trim()).filter(p => p);
-
                 changedTables.add('settings');
                 await saveToSupabaseAdmin(['settings']);
                 showToast('تم حفظ التذييل', 'success', true);
@@ -1943,9 +1884,9 @@
                         await common.supabaseClient.from('categories').delete().neq('id', '');
                         await common.supabaseClient.from('stores').delete().neq('id', '');
                         await common.supabaseClient.from('products').delete().neq('storeId', '');
-                        await common.supabaseClient.from('testimonials').delete().neq('id', 0);
+                        await common.supabaseClient.from('testimonials').delete().neq('id', '');
                         await common.supabaseClient.from('carousel').delete().neq('id', '');
-                        await common.supabaseClient.from('messages').delete().neq('id', 0);
+                        await common.supabaseClient.from('messages').delete().neq('id', '');
                         changedTables.clear();
                         ['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages'].forEach(t => changedTables.add(t));
                         await saveToSupabaseAdmin(['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages']);
@@ -1966,7 +1907,7 @@
                 changedTables.clear();
                 allTables.forEach(t => changedTables.add(t));
                 await saveToSupabaseAdmin(allTables);
-                showToast('✅ تم حفظ ومزامنة جميع البيانات (الفئات، المتاجر، المنتجات، الإعلانات، الإعدادات...)', 'success', true);
+                showToast('✅ تم حفظ ومزامنة جميع البيانات', 'success', true);
             });
 
             // ===== إعدادات رفع الصور =====
@@ -2039,9 +1980,7 @@
                         }
 
                         appData = await common.loadAppData();
-                        if (!cachedData) {
-                            refreshAllLists();
-                        }
+                        if (!cachedData) refreshAllLists();
                         document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
                         updateConnectionStatus();
 
@@ -2086,7 +2025,7 @@
                 renderAdminErrors();
                 showToast('تم مسح سجل الأخطاء', 'success', true);
             });
-        } // نهاية initializeAdminPanel
+        }
     </script>
 </body>
 </html>
