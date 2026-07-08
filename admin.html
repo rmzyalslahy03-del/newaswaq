@@ -498,7 +498,7 @@
         }
 
         // ============================================================
-        // توليد معرف فريد (string) بدلاً من number لتجنب مشكلة النطاق
+        // توليد معرف فريد (string)
         // ============================================================
         function generateId() {
             return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
@@ -555,7 +555,7 @@
                 }
             }
 
-            // ===== حفظ البيانات إلى Supabase =====
+            // ===== حفظ البيانات إلى Supabase (نسخة محسّنة) =====
             async function saveToSupabaseAdmin(tables = null) {
                 const tablesToSave = tables || Array.from(changedTables);
                 if (!appData || isSaving) return;
@@ -573,9 +573,87 @@
                 }, 30000);
 
                 try {
-                    await common.saveAppData(true, tablesToSave);
+                    // حفظ محلياً أولاً
+                    await common.saveToIndexedDB(appData);
+
+                    // المزامنة مع Supabase
+                    if (common.isOnline) {
+                        const supabase = common.supabaseClient;
+
+                        // 1. settings
+                        if (tablesToSave.includes('settings')) {
+                            await supabase.from('settings').upsert({
+                                id: 'main',
+                                data: {
+                                    header: appData.header || {},
+                                    ticker: appData.ticker || [],
+                                    design: appData.design || {},
+                                    footer: appData.footer || {},
+                                    settings: appData.settings || {}
+                                }
+                            });
+                        }
+
+                        // 2. categories
+                        if (tablesToSave.includes('categories') && appData.categories) {
+                            for (const cat of appData.categories) {
+                                await supabase.from('categories').upsert(cat);
+                            }
+                        }
+
+                        // 3. stores (flatten)
+                        if (tablesToSave.includes('stores')) {
+                            const allStores = [];
+                            for (const cat in appData.stores) {
+                                for (const store of appData.stores[cat]) {
+                                    if (!store.banners) store.banners = [];
+                                    allStores.push(store);
+                                }
+                            }
+                            for (const store of allStores) {
+                                await supabase.from('stores').upsert(store);
+                            }
+                        }
+
+                        // 4. products
+                        if (tablesToSave.includes('products')) {
+                            const allProducts = [];
+                            for (const storeId in appData.products) {
+                                for (const prod of appData.products[storeId]) {
+                                    allProducts.push({ ...prod, storeId });
+                                }
+                            }
+                            for (const prod of allProducts) {
+                                await supabase.from('products').upsert(prod);
+                            }
+                        }
+
+                        // 5. testimonials
+                        if (tablesToSave.includes('testimonials') && appData.testimonials) {
+                            for (const t of appData.testimonials) {
+                                await supabase.from('testimonials').upsert(t);
+                            }
+                        }
+
+                        // 6. carousel
+                        if (tablesToSave.includes('carousel') && appData.carousel) {
+                            for (const ad of appData.carousel) {
+                                await supabase.from('carousel').upsert(ad);
+                            }
+                        }
+
+                        // 7. messages
+                        if (tablesToSave.includes('messages') && appData.messages) {
+                            for (const msg of appData.messages) {
+                                await supabase.from('messages').upsert(msg);
+                            }
+                        }
+                    }
+
+                    // مسح التغييرات المحفوظة
                     tablesToSave.forEach(table => changedTables.delete(table));
                     showToast("✅ تم حفظ التغييرات ومزامنتها", 'success', true);
+
                 } catch (err) {
                     console.error("خطأ في الحفظ:", err);
                     showToast("❌ خطأ في الحفظ: " + err.message, 'error', true);
@@ -1137,6 +1215,7 @@
             }
 
             function deleteBanner(storeId, bannerId) {
+                if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
                 const store = findStoreById(storeId);
                 if (!store) return;
                 store.banners = (store.banners || []).filter(b => b.id !== bannerId);
@@ -1250,22 +1329,29 @@
 
             window.deleteCategory = async function(id) {
                 if (!appData) return;
-                if (confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم حذف جميع المتاجر والمنتجات المرتبطة بها.')) {
-                    try {
-                        await common.supabaseClient.from('categories').delete().eq('id', id);
-                        const catToDelete = appData.categories.find(c => c.id === id);
-                        appData.categories = appData.categories.filter(c => c.id !== id);
-                        if (catToDelete && appData.stores[catToDelete.name]) delete appData.stores[catToDelete.name];
-                        changedTables.add('categories');
-                        changedTables.add('stores');
-                        changedTables.add('products');
-                        await saveToSupabaseAdmin(['categories', 'stores', 'products']);
-                        refreshAllLists();
-                        showToast('تم حذف الفئة بنجاح', 'success', true);
-                    } catch (err) {
-                        showToast("خطأ في الحذف: " + err.message, 'error', true);
-                        common.logAdminError(err, 'deleteCategory');
+                if (!confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم حذف جميع المتاجر والمنتجات المرتبطة بها.')) return;
+                try {
+                    const catToDelete = appData.categories.find(c => c.id === id);
+                    if (!catToDelete) return;
+                    const catName = catToDelete.name;
+                    // حذف المتاجر والمنتجات
+                    const storesToDelete = appData.stores[catName] || [];
+                    for (const store of storesToDelete) {
+                        delete appData.products[store.id];
+                        await common.supabaseClient.from('stores').delete().eq('id', store.id);
                     }
+                    delete appData.stores[catName];
+                    appData.categories = appData.categories.filter(c => c.id !== id);
+                    await common.supabaseClient.from('categories').delete().eq('id', id);
+                    changedTables.add('categories');
+                    changedTables.add('stores');
+                    changedTables.add('products');
+                    await saveToSupabaseAdmin(['categories', 'stores', 'products']);
+                    refreshAllLists();
+                    showToast('تم حذف الفئة بنجاح', 'success', true);
+                } catch (err) {
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteCategory');
                 }
             };
 
@@ -1302,26 +1388,29 @@
 
             window.deleteStore = async function(storeId) {
                 if (!appData) return;
-                if (confirm('هل أنت متأكد من حذف هذا المتجر؟ سيتم حذف جميع منتجاته.')) {
-                    try {
-                        await common.supabaseClient.from('stores').delete().eq('id', storeId);
-                        for (let cat in appData.stores) {
-                            const index = appData.stores[cat].findIndex(s => s.id === storeId);
-                            if (index !== -1) {
-                                appData.stores[cat].splice(index, 1);
-                                delete appData.products[storeId];
-                                break;
-                            }
+                if (!confirm('هل أنت متأكد من حذف هذا المتجر؟ سيتم حذف جميع منتجاته.')) return;
+                try {
+                    let foundCategory = null;
+                    for (let cat in appData.stores) {
+                        const index = appData.stores[cat].findIndex(s => s.id === storeId);
+                        if (index !== -1) {
+                            foundCategory = cat;
+                            appData.stores[cat].splice(index, 1);
+                            break;
                         }
-                        changedTables.add('stores');
-                        changedTables.add('products');
-                        await saveToSupabaseAdmin(['stores', 'products']);
-                        refreshAllLists();
-                        showToast('تم حذف المتجر', 'success', true);
-                    } catch (err) {
-                        showToast("خطأ في الحذف: " + err.message, 'error', true);
-                        common.logAdminError(err, 'deleteStore');
                     }
+                    if (!foundCategory) return;
+                    delete appData.products[storeId];
+                    await common.supabaseClient.from('stores').delete().eq('id', storeId);
+                    await common.supabaseClient.from('products').delete().eq('storeId', storeId);
+                    changedTables.add('stores');
+                    changedTables.add('products');
+                    await saveToSupabaseAdmin(['stores', 'products']);
+                    refreshAllLists();
+                    showToast('تم حذف المتجر', 'success', true);
+                } catch (err) {
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteStore');
                 }
             };
 
@@ -1342,29 +1431,27 @@
 
             window.deleteProduct = async function(storeId, productId) {
                 if (!appData) return;
-                if (confirm('هل أنت متأكد من حذف هذا المنتج؟')) {
-                    try {
-                        await common.supabaseClient.from('products').delete().eq('storeId', storeId).eq('id', productId);
-                        const index = appData.products[storeId].findIndex(p => p.id === productId);
-                        if (index !== -1) {
-                            appData.products[storeId].splice(index, 1);
-                            changedTables.add('products');
-                            await saveToSupabaseAdmin(['products']);
-                            refreshAllLists();
-                            showToast('تم حذف المنتج', 'success', true);
-                        }
-                    } catch (err) {
-                        showToast("خطأ في الحذف: " + err.message, 'error', true);
-                        common.logAdminError(err, 'deleteProduct');
-                    }
+                if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
+                try {
+                    const index = appData.products[storeId].findIndex(p => p.id === productId);
+                    if (index === -1) return;
+                    appData.products[storeId].splice(index, 1);
+                    await common.supabaseClient.from('products').delete().eq('storeId', storeId).eq('id', productId);
+                    changedTables.add('products');
+                    await saveToSupabaseAdmin(['products']);
+                    refreshAllLists();
+                    showToast('تم حذف المنتج', 'success', true);
+                } catch (err) {
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteProduct');
                 }
             };
 
             // ===== أحداث أزرار الإضافة والتحديث =====
             document.getElementById('addCategoryBtn').addEventListener('click', async () => {
-                const name = document.getElementById('categoryName').value;
+                const name = document.getElementById('categoryName').value.trim();
                 if (!name) return alert('اسم الفئة مطلوب');
-                const slug = document.getElementById('categorySlug').value || name.replace(/\s/g, '-').toLowerCase();
+                const slug = document.getElementById('categorySlug').value.trim() || name.replace(/\s/g, '-').toLowerCase();
                 if (appData.categories.some(c => c.slug === slug)) {
                     alert('هذا الـ slug موجود مسبقاً');
                     return;
@@ -1374,16 +1461,15 @@
                     name: name,
                     icon: document.getElementById('categoryIcon').value || 'fas fa-tag',
                     slug: slug,
-                    color: document.getElementById('categoryColor').value,
+                    color: document.getElementById('categoryColor').value || '#9b4d96',
                     featuredImage: document.getElementById('categoryFeaturedImage').value || 'https://via.placeholder.com/400x300',
                     indexImage: document.getElementById('categoryIndexImage').value || 'https://via.placeholder.com/600x400',
                     showInIndex: document.getElementById('categoryShowInIndex').checked,
                     indexOrder: parseInt(document.getElementById('categoryIndexOrder').value) || 0,
-                    adText: document.getElementById('categoryAdText').value,
+                    adText: document.getElementById('categoryAdText').value || '',
                     adEnabled: document.getElementById('categoryAdEnabled').checked
                 };
                 try {
-                    await common.supabaseClient.from('categories').insert(newCat);
                     appData.categories.push(newCat);
                     if (!appData.stores[newCat.name]) appData.stores[newCat.name] = [];
                     changedTables.add('categories');
@@ -1402,25 +1488,23 @@
                 const catIndex = appData.categories.findIndex(c => c.id === id);
                 if (catIndex === -1) return;
                 const oldName = appData.categories[catIndex].name;
-                const newName = document.getElementById('categoryName').value;
                 const updatedCat = {
                     ...appData.categories[catIndex],
-                    name: newName,
-                    icon: document.getElementById('categoryIcon').value,
-                    slug: document.getElementById('categorySlug').value,
-                    color: document.getElementById('categoryColor').value,
+                    name: document.getElementById('categoryName').value.trim(),
+                    icon: document.getElementById('categoryIcon').value || 'fas fa-tag',
+                    slug: document.getElementById('categorySlug').value.trim(),
+                    color: document.getElementById('categoryColor').value || '#9b4d96',
                     featuredImage: document.getElementById('categoryFeaturedImage').value,
                     indexImage: document.getElementById('categoryIndexImage').value,
                     showInIndex: document.getElementById('categoryShowInIndex').checked,
-                    indexOrder: parseInt(document.getElementById('categoryIndexOrder').value),
-                    adText: document.getElementById('categoryAdText').value,
+                    indexOrder: parseInt(document.getElementById('categoryIndexOrder').value) || 0,
+                    adText: document.getElementById('categoryAdText').value || '',
                     adEnabled: document.getElementById('categoryAdEnabled').checked
                 };
                 try {
-                    await common.supabaseClient.from('categories').update(updatedCat).eq('id', id);
                     appData.categories[catIndex] = updatedCat;
-                    if (oldName !== newName && appData.stores[oldName]) {
-                        appData.stores[newName] = appData.stores[oldName];
+                    if (oldName !== updatedCat.name && appData.stores[oldName]) {
+                        appData.stores[updatedCat.name] = appData.stores[oldName];
                         delete appData.stores[oldName];
                     }
                     changedTables.add('categories');
@@ -1437,7 +1521,7 @@
             document.getElementById('addStoreBtn').addEventListener('click', async () => {
                 const category = document.getElementById('storeCategorySelect').value;
                 if (!category || category === 'اختر الفئة') return alert('اختر الفئة أولاً');
-                const name = document.getElementById('storeName').value;
+                const name = document.getElementById('storeName').value.trim();
                 if (!name) return alert('اسم المتجر مطلوب');
                 const newStore = {
                     id: generateId(),
@@ -1446,18 +1530,17 @@
                     logo: document.getElementById('storeLogo').value || 'https://via.placeholder.com/100',
                     externalUrl: document.getElementById('storeExternalUrl').value || '#',
                     hidden: document.getElementById('storeHidden').checked,
-                    description: document.getElementById('storeDescription').value,
-                    phone: document.getElementById('storePhone').value,
-                    address: document.getElementById('storeAddress').value,
+                    description: document.getElementById('storeDescription').value || '',
+                    phone: document.getElementById('storePhone').value || '',
+                    address: document.getElementById('storeAddress').value || '',
                     ownerCode: '',
                     allowUpload: false,
                     banners: [],
-                    productDisplayMode: document.getElementById('storeProductDisplayMode').value,
-                    productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value),
-                    numStrips: parseInt(document.getElementById('storeNumStrips').value)
+                    productDisplayMode: document.getElementById('storeProductDisplayMode').value || 'grid',
+                    productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value) || 10,
+                    numStrips: parseInt(document.getElementById('storeNumStrips').value) || 10
                 };
                 try {
-                    await common.supabaseClient.from('stores').insert(newStore);
                     if (!appData.stores[category]) appData.stores[category] = [];
                     appData.stores[category].push(newStore);
                     appData.products[newStore.id] = [];
@@ -1479,7 +1562,7 @@
                 if (!store) return;
                 const updatedStore = {
                     ...store,
-                    name: document.getElementById('storeName').value,
+                    name: document.getElementById('storeName').value.trim(),
                     logo: document.getElementById('storeLogo').value,
                     externalUrl: document.getElementById('storeExternalUrl').value,
                     description: document.getElementById('storeDescription').value,
@@ -1487,11 +1570,10 @@
                     address: document.getElementById('storeAddress').value,
                     hidden: document.getElementById('storeHidden').checked,
                     productDisplayMode: document.getElementById('storeProductDisplayMode').value,
-                    productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value),
-                    numStrips: parseInt(document.getElementById('storeNumStrips').value)
+                    productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value) || 10,
+                    numStrips: parseInt(document.getElementById('storeNumStrips').value) || 10
                 };
                 try {
-                    await common.supabaseClient.from('stores').update(updatedStore).eq('id', currentEditStoreId);
                     Object.assign(store, updatedStore);
                     changedTables.add('stores');
                     await saveToSupabaseAdmin(['stores']);
@@ -1508,19 +1590,18 @@
             document.getElementById('addProductBtn').addEventListener('click', async () => {
                 const storeId = document.getElementById('productStoreSelect').value;
                 if (!storeId || storeId === 'اختر المتجر') return alert('اختر المتجر أولاً');
-                const name = document.getElementById('productName').value;
+                const name = document.getElementById('productName').value.trim();
                 if (!name) return alert('اسم المنتج مطلوب');
                 const newProduct = {
                     id: generateId(),
                     storeId: storeId,
                     name: name,
-                    oldPrice: parseFloat(document.getElementById('productOldPrice').value),
-                    newPrice: parseFloat(document.getElementById('productNewPrice').value),
+                    oldPrice: parseFloat(document.getElementById('productOldPrice').value) || 0,
+                    newPrice: parseFloat(document.getElementById('productNewPrice').value) || 0,
                     image: document.getElementById('productImage').value || 'https://via.placeholder.com/300',
                     link: document.getElementById('productLink').value || '#'
                 };
                 try {
-                    await common.supabaseClient.from('products').insert(newProduct);
                     if (!appData.products[storeId]) appData.products[storeId] = [];
                     appData.products[storeId].push(newProduct);
                     changedTables.add('products');
@@ -1540,14 +1621,13 @@
                 if (!product) return;
                 const updatedProduct = {
                     ...product,
-                    name: document.getElementById('productName').value,
-                    oldPrice: parseFloat(document.getElementById('productOldPrice').value),
-                    newPrice: parseFloat(document.getElementById('productNewPrice').value),
+                    name: document.getElementById('productName').value.trim(),
+                    oldPrice: parseFloat(document.getElementById('productOldPrice').value) || 0,
+                    newPrice: parseFloat(document.getElementById('productNewPrice').value) || 0,
                     image: document.getElementById('productImage').value,
                     link: document.getElementById('productLink').value
                 };
                 try {
-                    await common.supabaseClient.from('products').update(updatedProduct).eq('storeId', currentEditProductStoreId).eq('id', currentEditProductId);
                     Object.assign(product, updatedProduct);
                     changedTables.add('products');
                     await saveToSupabaseAdmin(['products']);
@@ -1564,18 +1644,17 @@
 
             // ===== الإعلانات الدوارة =====
             document.getElementById('addCarouselBtn').addEventListener('click', async () => {
-                const name = document.getElementById('carouselName').value;
+                const name = document.getElementById('carouselName').value.trim();
                 if (!name) return alert('اسم الإعلان مطلوب');
                 const newAd = {
                     id: generateId(),
                     name: name,
-                    link: document.getElementById('carouselLink').value,
-                    image: document.getElementById('carouselImage').value,
+                    link: document.getElementById('carouselLink').value || '#',
+                    image: document.getElementById('carouselImage').value || 'https://via.placeholder.com/800x400',
                     order: parseInt(document.getElementById('carouselOrder').value) || 0,
                     active: document.getElementById('carouselActive').checked
                 };
                 try {
-                    await common.supabaseClient.from('carousel').insert(newAd);
                     if (!appData.carousel) appData.carousel = [];
                     appData.carousel.push(newAd);
                     changedTables.add('carousel');
@@ -1595,14 +1674,13 @@
                 if (index === -1) return;
                 const updatedAd = {
                     ...appData.carousel[index],
-                    name: document.getElementById('carouselName').value,
-                    link: document.getElementById('carouselLink').value,
-                    image: document.getElementById('carouselImage').value,
-                    order: parseInt(document.getElementById('carouselOrder').value),
+                    name: document.getElementById('carouselName').value.trim(),
+                    link: document.getElementById('carouselLink').value || '#',
+                    image: document.getElementById('carouselImage').value || 'https://via.placeholder.com/800x400',
+                    order: parseInt(document.getElementById('carouselOrder').value) || 0,
                     active: document.getElementById('carouselActive').checked
                 };
                 try {
-                    await common.supabaseClient.from('carousel').update(updatedAd).eq('id', currentEditCarouselId);
                     appData.carousel[index] = updatedAd;
                     changedTables.add('carousel');
                     await saveToSupabaseAdmin(['carousel']);
@@ -1616,19 +1694,48 @@
                 }
             });
 
+            window.editCarousel = function(id) {
+                if (!appData) return;
+                const ad = appData.carousel.find(a => a.id === id);
+                if (!ad) return;
+                currentEditCarouselId = id;
+                document.getElementById('carouselName').value = ad.name;
+                document.getElementById('carouselLink').value = ad.link;
+                document.getElementById('carouselImage').value = ad.image;
+                document.getElementById('carouselOrder').value = ad.order;
+                document.getElementById('carouselActive').checked = ad.active;
+                document.getElementById('addCarouselBtn').style.display = 'none';
+                document.getElementById('updateCarouselBtn').style.display = 'block';
+            };
+
+            window.deleteCarousel = async function(id) {
+                if (!appData) return;
+                if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+                try {
+                    appData.carousel = appData.carousel.filter(ad => ad.id !== id);
+                    await common.supabaseClient.from('carousel').delete().eq('id', id);
+                    changedTables.add('carousel');
+                    await saveToSupabaseAdmin(['carousel']);
+                    refreshAllLists();
+                    showToast('تم حذف الإعلان', 'success', true);
+                } catch (err) {
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteCarousel');
+                }
+            };
+
             // ===== التقييمات =====
             document.getElementById('addTestimonialBtn').addEventListener('click', async () => {
-                const name = document.getElementById('testimonialName').value;
+                const name = document.getElementById('testimonialName').value.trim();
                 if (!name) return alert('الاسم مطلوب');
                 const newTestimonial = {
                     id: generateId(),
                     name: name,
                     image: document.getElementById('testimonialImage').value || 'https://via.placeholder.com/100',
                     rating: parseInt(document.getElementById('testimonialRating').value) || 5,
-                    review: document.getElementById('testimonialReview').value
+                    review: document.getElementById('testimonialReview').value || ''
                 };
                 try {
-                    await common.supabaseClient.from('testimonials').insert(newTestimonial);
                     appData.testimonials.push(newTestimonial);
                     changedTables.add('testimonials');
                     await saveToSupabaseAdmin(['testimonials']);
@@ -1647,13 +1754,12 @@
                 if (index === -1) return;
                 const updatedTestimonial = {
                     ...appData.testimonials[index],
-                    name: document.getElementById('testimonialName').value,
-                    image: document.getElementById('testimonialImage').value,
-                    rating: parseInt(document.getElementById('testimonialRating').value),
-                    review: document.getElementById('testimonialReview').value
+                    name: document.getElementById('testimonialName').value.trim(),
+                    image: document.getElementById('testimonialImage').value || 'https://via.placeholder.com/100',
+                    rating: parseInt(document.getElementById('testimonialRating').value) || 5,
+                    review: document.getElementById('testimonialReview').value || ''
                 };
                 try {
-                    await common.supabaseClient.from('testimonials').update(updatedTestimonial).eq('id', currentEditTestimonialId);
                     appData.testimonials[index] = updatedTestimonial;
                     changedTables.add('testimonials');
                     await saveToSupabaseAdmin(['testimonials']);
@@ -1667,14 +1773,43 @@
                 }
             });
 
+            window.editTestimonial = function(id) {
+                if (!appData) return;
+                const t = appData.testimonials.find(t => t.id === id);
+                if (!t) return;
+                currentEditTestimonialId = id;
+                document.getElementById('testimonialName').value = t.name;
+                document.getElementById('testimonialImage').value = t.image;
+                document.getElementById('testimonialRating').value = t.rating;
+                document.getElementById('testimonialReview').value = t.review;
+                document.getElementById('addTestimonialBtn').style.display = 'none';
+                document.getElementById('updateTestimonialBtn').style.display = 'block';
+            };
+
+            window.deleteTestimonial = async function(id) {
+                if (!appData) return;
+                if (!confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
+                try {
+                    appData.testimonials = appData.testimonials.filter(t => t.id !== id);
+                    await common.supabaseClient.from('testimonials').delete().eq('id', id);
+                    changedTables.add('testimonials');
+                    await saveToSupabaseAdmin(['testimonials']);
+                    refreshAllLists();
+                    showToast('تم حذف التقييم', 'success', true);
+                } catch (err) {
+                    showToast("خطأ في الحذف: " + err.message, 'error', true);
+                    common.logAdminError(err, 'deleteTestimonial');
+                }
+            };
+
             // ===== المسابقات =====
             document.getElementById('addContestBtn').addEventListener('click', async () => {
-                const name = document.getElementById('contestName').value;
+                const name = document.getElementById('contestName').value.trim();
                 if (!name) return alert('اسم المسابقة مطلوب');
                 const newContest = {
                     name: name,
-                    description: document.getElementById('contestDescription').value,
-                    endDate: document.getElementById('contestEndDate').value
+                    description: document.getElementById('contestDescription').value || '',
+                    endDate: document.getElementById('contestEndDate').value || ''
                 };
                 if (!appData.settings.contests) appData.settings.contests = [];
                 appData.settings.contests.push(newContest);
@@ -1689,9 +1824,9 @@
                 const index = document.getElementById('editContestId').value;
                 if (index === '') return;
                 appData.settings.contests[index] = {
-                    name: document.getElementById('contestName').value,
-                    description: document.getElementById('contestDescription').value,
-                    endDate: document.getElementById('contestEndDate').value
+                    name: document.getElementById('contestName').value.trim(),
+                    description: document.getElementById('contestDescription').value || '',
+                    endDate: document.getElementById('contestEndDate').value || ''
                 };
                 changedTables.add('settings');
                 await saveToSupabaseAdmin(['settings']);
@@ -1699,6 +1834,28 @@
                 resetFormFields('contestForm');
                 showToast('تم تحديث المسابقة', 'success', true);
             });
+
+            window.editContest = function(index) {
+                if (!appData || !appData.settings.contests) return;
+                const contest = appData.settings.contests[index];
+                if (!contest) return;
+                document.getElementById('editContestId').value = index;
+                document.getElementById('contestName').value = contest.name;
+                document.getElementById('contestDescription').value = contest.description;
+                document.getElementById('contestEndDate').value = contest.endDate;
+                document.getElementById('addContestBtn').style.display = 'none';
+                document.getElementById('updateContestBtn').style.display = 'block';
+            };
+
+            window.deleteContest = async function(index) {
+                if (!appData || !appData.settings.contests) return;
+                if (!confirm('هل أنت متأكد من حذف هذه المسابقة؟')) return;
+                appData.settings.contests.splice(index, 1);
+                changedTables.add('settings');
+                await saveToSupabaseAdmin(['settings']);
+                refreshAllLists();
+                showToast('تم حذف المسابقة', 'success', true);
+            };
 
             // ===== شارات الثقة =====
             document.getElementById('saveTrustBadges').addEventListener('click', async () => {
@@ -1709,6 +1866,16 @@
                 refreshAllLists();
                 showToast('تم حفظ شارات الثقة', 'success', true);
             });
+
+            window.deleteTrustBadge = async function(index) {
+                if (!appData || !appData.settings.trustBadges) return;
+                if (!confirm('هل أنت متأكد من حذف هذه الشارة؟')) return;
+                appData.settings.trustBadges.splice(index, 1);
+                changedTables.add('settings');
+                await saveToSupabaseAdmin(['settings']);
+                refreshAllLists();
+                showToast('تم حذف الشارة', 'success', true);
+            };
 
             // ===== الإعدادات العامة =====
             document.getElementById('saveGeneralSettings').addEventListener('click', async () => {
@@ -1723,7 +1890,7 @@
                     chat: document.getElementById('orderChatCheckbox').checked
                 };
                 appData.settings.contactEmail = document.getElementById('contactEmail').value;
-                appData.settings.whatsappNumber = document.getElementById('whatsappNumber').value.trim();
+                appData.settings.whatsappNumber = document.getElementById('whatsappNumber').value.trim() || '967778562099';
                 appData.settings.trackingCode = document.getElementById('trackingCode').value.trim();
                 changedTables.add('settings');
                 await saveToSupabaseAdmin(['settings']);
@@ -1829,6 +1996,17 @@
                 showToast('تم حفظ معلومات من نحن', 'success', true);
             });
 
+            // ===== رسائل الاتصال =====
+            window.deleteMessage = async function(index) {
+                if (!appData || !appData.messages) return;
+                if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
+                appData.messages.splice(index, 1);
+                changedTables.add('messages');
+                await saveToSupabaseAdmin(['messages']);
+                refreshAllLists();
+                showToast('تم حذف الرسالة', 'success', true);
+            };
+
             // ===== نشر التحديثات =====
             document.getElementById('publishBtn').addEventListener('click', async () => {
                 const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
@@ -1851,6 +2029,10 @@
             // ===== عداد الزوار =====
             document.getElementById('resetVisitorBtn').addEventListener('click', () => {
                 localStorage.setItem('visitorCount', 0);
+                if (appData) {
+                    appData.settings.visitorCount = 0;
+                    saveToSupabaseAdmin(['settings']);
+                }
                 document.getElementById('visitorCount').textContent = 0;
                 showToast('✅ تم إعادة تعيين العداد', 'success', true);
             });
@@ -1891,8 +2073,8 @@
                         ['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages'].forEach(t => changedTables.add(t));
                         await saveToSupabaseAdmin(['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages']);
                         refreshAllLists();
+                        document.getElementById('visitorCount').textContent = appData.settings.visitorCount || 0;
                         showToast('✅ تم استيراد البيانات بنجاح', 'success', true);
-                        document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
                     } catch (err) {
                         alert('فشل استيراد الملف: ' + err.message);
                         common.logAdminError(err, 'importData');
@@ -1975,13 +2157,13 @@
                         if (cachedData) {
                             appData = cachedData;
                             refreshAllLists();
-                            document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
+                            document.getElementById('visitorCount').textContent = appData.settings?.visitorCount || 0;
                             updateConnectionStatus();
                         }
 
                         appData = await common.loadAppData();
                         if (!cachedData) refreshAllLists();
-                        document.getElementById('visitorCount').textContent = localStorage.getItem('visitorCount') || 0;
+                        document.getElementById('visitorCount').textContent = appData.settings?.visitorCount || 0;
                         updateConnectionStatus();
 
                         window.broadcastChannel = new BroadcastChannel('markets_channel');
