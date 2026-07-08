@@ -63,28 +63,18 @@ async function uploadImage(file, path) {
     const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     try {
+        const { data, error } = await supabaseClient.storage
+            .from(STORAGE_BUCKET)
+            .upload(path, file, {
+                upsert: true,
+                signal: controller.signal
+            });
+        clearTimeout(timeoutId);
+        if (error) throw error;
         const { data: urlData } = supabaseClient.storage
             .from(STORAGE_BUCKET)
             .getPublicUrl(path);
-        const publicUrl = urlData.publicUrl;
-
-        const response = await fetch(publicUrl, {
-            method: 'PUT',
-            body: file,
-            headers: {
-                'Content-Type': file.type,
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'Cache-Control': 'public, max-age=31536000'
-            },
-            signal: controller.signal
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`فشل الرفع (${response.status}): ${errorText}`);
-        }
-
-        return publicUrl;
+        return urlData.publicUrl;
     } catch (e) {
         clearTimeout(timeoutId);
         if (e.name === 'AbortError') {
@@ -141,7 +131,7 @@ function getWhatsAppNumber() {
     return DEFAULT_WHATSAPP_NUMBER;
 }
 
-// ================== دالة ensureSocialMedia (الأساسية) ==================
+// ================== دالة ensureSocialMedia (لضمان وجود بيانات التواصل) ==================
 function ensureSocialMedia(data) {
     if (!data) return data;
     if (!data.footer) data.footer = {};
@@ -271,7 +261,9 @@ async function fetchFromSupabase() {
             };
         }
 
+        // التأكد من وجود socialMedia
         ensureSocialMedia(result);
+
         return result;
     } catch (e) {
         logAdminError(e, 'fetchFromSupabase');
@@ -299,6 +291,7 @@ async function saveAppData(force = false, tables = null) {
 // ================== دفع البيانات إلى Supabase ==================
 async function pushToSupabase(data, tables = null) {
     const allTables = !tables || tables.length === 0;
+
     try {
         if (allTables || tables.includes('settings')) {
             await supabaseClient.from('settings').upsert({
@@ -537,7 +530,7 @@ function translate(key) {
     return key;
 }
 
-// ================== دوال المستخدمين (تسجيل، دخول، إعجابات...) ==================
+// ================== دوال المستخدمين ==================
 function showLoginDialog() {
     const loginHtml = `<div id="loginModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:white; padding:30px; border-radius:40px; width:300px;"><h3 style="margin-bottom:20px;">تسجيل الدخول</h3><input type="text" id="loginUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;"><input type="password" id="loginPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;"><button onclick="window.performLogin()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold;">دخول</button><button onclick="window.showRegisterDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">إنشاء حساب جديد</button><button onclick="document.getElementById('loginModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button></div></div>`;
     document.body.insertAdjacentHTML('beforeend', loginHtml);
@@ -740,7 +733,7 @@ function startCarousel() {
     // ستُستخدم من index.html
 }
 
-// ================== PWA: رسالة تثبيت منبثقة أعلى الشاشة ==================
+// ================== PWA ==================
 let deferredPrompt;
 let installToastTimeout;
 
@@ -916,4 +909,4 @@ if ('serviceWorker' in navigator) {
             .then(reg => console.log('SW مسجل'))
             .catch(err => console.warn('فشل تسجيل SW', err));
     });
-    }
+}
