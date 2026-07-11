@@ -1,0 +1,2205 @@
+/* ============================================================
+   common.css - الأنماط المشتركة للموقع
+   النسخة النهائية المتكاملة - تعمل مع index.html و admin.html
+   مع تكبير المنتجات وتحسين الأيقونات
+   ============================================================ */
+
+/* ============================================================
+   1. المتغيرات العامة وإعادة التعيين
+   ============================================================ */
+:root {
+  /* الألوان الأساسية */
+  --primary: #fbbf24;
+  --primary-dark: #f59e0b;
+  --primary-light: #fde68a;
+  --secondary: #0f172a;
+  --secondary-light: #1e293b;
+  --bg-body: #f4f7fc;
+  --text-color: #1e293b;
+  --text-light: #64748b;
+  --border-color: #e2e8f0;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.12);
+  --radius: 30px;
+  --radius-sm: 20px;
+  --radius-xs: 12px;
+  --transition: 0.25s ease;
+  --font-family: 'Cairo', sans-serif;
+
+  /* متغيرات التصميم القابلة للتخصيص من لوحة التحكم */
+  --category-bg: linear-gradient(145deg, #f9eef7, #f3d9e8);
+  --category-text: #9b4d96;
+  --category-font-size: 2rem;
+  --store-bg: #ffffff;
+  --store-text: #1e293b;
+  --store-font-size: 1.3rem;
+  --product-bg: #ffffff;
+  --product-text: #1e293b;
+  --product-font-size: 0.85rem;
+  --ad-bg: linear-gradient(90deg, #fbbf24, #f59e0b);
+  --ad-text: #0f172a;
+  --ad-font-size: 1.1rem;
+  --general-font-size: 1rem;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: var(--font-family);
+}
+
+body {
+  background-color: var(--bg-body);
+  color: var(--text-color);
+  line-height: 1.6;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  font-size: var(--general-font-size);
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+button {
+  cursor: pointer;
+  font-family: var(--font-family);
+}
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* ============================================================
+   2. الحاويات والعناصر المساعدة
+   ============================================================ */
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+.full-width {
+  width: 100%;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* ============================================================
+   3. الهيدر العلوي (top bar)
+   ============================================================ */
+.top-bar {
+  background: var(--secondary);
+  color: white;
+  padding: 0.4rem 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+  min-height: 50px;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.top-bar-left>span:first-child {
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.top-bar-left .flag {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.profile-link,
+.cart-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  color: var(--primary);
+  cursor: pointer;
+  transition: transform var(--transition);
+}
+
+.profile-link:hover,
+.cart-icon:hover {
+  transform: scale(1.1);
+}
+
+.cart-icon {
+  position: relative;
+}
+
+.cart-count {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  background: #ef4444;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.admin-link {
+  background: var(--primary);
+  color: var(--secondary);
+  border: none;
+  padding: 0.25rem 0.9rem;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.admin-link:hover {
+  background: var(--primary-dark);
+  transform: scale(1.02);
+}
+
+.admin-link i {
+  font-size: 0.7rem;
+}
+
+/* ============================================================
+   4. الهيدر الرئيسي (البانر)
+   ============================================================ */
+header {
+  position: relative;
+  color: white;
+  padding: 3rem 0;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 0 0 30px 30px;
+  background-size: cover;
+  background-position: center;
+  transition: background-image 1s ease-in-out;
+  background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=80');
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 0 0 30px 30px;
+}
+
+header .container {
+  position: relative;
+  z-index: 2;
+}
+
+header h1 {
+  font-size: 2.8rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+header p {
+  font-size: 1.4rem;
+  opacity: 0.95;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
+   5. شريط الإعلانات النصي (ticker)
+   ============================================================ */
+.top-ticker {
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  color: var(--secondary);
+  padding: 0.6rem 0;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  border-bottom: 2px solid #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.top-ticker-content {
+  display: inline-block;
+  animation: ticker 25s linear infinite;
+  padding-left: 100%;
+}
+
+.top-ticker-content span {
+  margin: 0 30px;
+}
+
+@keyframes ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* ============================================================
+   6. شريط البحث
+   ============================================================ */
+.search-container {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 2rem;
+  background: #fff;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 40px;
+  padding: 0.3rem 0.3rem 0.3rem 1rem;
+  width: 100%;
+  max-width: 600px;
+  transition: box-shadow var(--transition);
+}
+
+.search-bar:focus-within {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.5);
+}
+
+.search-bar input {
+  flex: 1;
+  border: none;
+  padding: 0.5rem;
+  font-size: 1rem;
+  outline: none;
+  background: transparent;
+  color: var(--text-color);
+}
+
+.search-bar button {
+  background: var(--primary);
+  border: none;
+  border-radius: 40px;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.search-bar button:hover {
+  background: var(--primary-dark);
+}
+
+/* ============================================================
+   7. شبكة الفئات - بطاقات مستطيلة (صورة علوية / أيقونة واسم سفلي)
+   ============================================================ */
+.index-grid {
+  display: grid;
+  gap: 20px;
+  max-width: 1100px;
+  margin: 2rem auto;
+  padding: 0 15px;
+  /* يتم تحديد grid-template-columns عبر JavaScript (افتراضي 4) */
+}
+
+.index-item {
+  background: #ffffff;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  border: 2px solid transparent;
+}
+
+.index-item:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary);
+}
+
+.index-image-wrapper {
+  width: 100%;
+  aspect-ratio: 1 / 1.2;
+  overflow: hidden;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.index-image-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.index-item:hover .index-image-wrapper img {
+  transform: scale(1.05);
+}
+
+.index-content {
+  padding: 14px 10px 16px;
+  background: #ffffff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  border-top: 1px solid #f0f0f0;
+}
+
+.index-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.index-title {
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.3;
+}
+
+/* ===== وضع القائمة (list mode) ===== */
+.index-grid.list-mode {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  grid-template-columns: none !important;
+}
+
+.index-grid.list-mode .index-item {
+  width: 100%;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 10px !important;
+  border-radius: 16px !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+.index-grid.list-mode .index-item .index-image-wrapper {
+  width: 80px !important;
+  height: 80px !important;
+  aspect-ratio: 1/1 !important;
+  flex-shrink: 0 !important;
+  border-radius: 12px !important;
+}
+
+.index-grid.list-mode .index-item .index-content {
+  flex: 1 !important;
+  text-align: right !important;
+  padding: 0 15px !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 10px !important;
+  border-top: none !important;
+}
+
+.index-grid.list-mode .index-item .index-icon {
+  font-size: 1.2rem !important;
+}
+
+/* ============================================================
+   8. الفئات والمتاجر والمنتجات (مع تكبير المنتجات)
+   ============================================================ */
+.category-section {
+  width: 100%;
+  padding: 2rem 5%;
+  margin-bottom: 1.5rem;
+  background: var(--category-bg);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 20px;
+}
+
+.category-title {
+  font-size: var(--category-font-size);
+  font-weight: 700;
+  padding-right: 15px;
+  border-right: 8px solid var(--category-text);
+  color: var(--category-text);
+}
+
+.category-featured-image {
+  width: 150px;
+  height: 100px;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+  border: 3px solid white;
+  transition: transform var(--transition);
+}
+
+.category-featured-image:hover {
+  transform: scale(1.02);
+}
+
+.category-ticker {
+  background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+  color: var(--secondary);
+  padding: 0.5rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  overflow: hidden;
+  white-space: nowrap;
+  border-radius: 40px;
+  margin: 10px 0;
+}
+
+.category-ticker-content {
+  display: inline-block;
+  animation: ticker 20s linear infinite;
+  padding-left: 100%;
+}
+
+.stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 25px;
+  margin-top: 20px;
+}
+
+.stores-horizontal {
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 15px 0;
+  margin-bottom: 20px;
+  scrollbar-width: thin;
+}
+
+.stores-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.stores-horizontal::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.stores-track {
+  display: inline-flex;
+  gap: 15px;
+}
+
+.store-horizontal-card {
+  width: 250px;
+  background: var(--store-bg);
+  border-radius: 25px;
+  padding: 15px;
+  display: inline-block;
+  text-align: center;
+  box-shadow: var(--shadow);
+  transition: transform var(--transition);
+  cursor: pointer;
+}
+
+.store-horizontal-card:hover {
+  transform: scale(1.02);
+}
+
+.store-horizontal-card img {
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  object-fit: cover;
+  margin-bottom: 10px;
+}
+
+.store-card {
+  background: var(--store-bg);
+  border-radius: 25px;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.07);
+  transition: transform var(--transition), box-shadow var(--transition);
+  color: var(--store-text);
+  cursor: pointer;
+}
+
+.store-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-hover);
+}
+
+.store-header {
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #f0f4fa;
+}
+
+.store-logo {
+  width: 60px;
+  height: 60px;
+  border-radius: 18px;
+  object-fit: cover;
+  border: 2px solid white;
+  transition: transform var(--transition);
+}
+
+.store-card:hover .store-logo {
+  transform: scale(1.05);
+}
+
+.store-info {
+  flex: 1;
+}
+
+.store-info h3 {
+  font-size: var(--store-font-size);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.store-info h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.store-info h3 a:hover {
+  text-decoration: underline;
+}
+
+.store-category-badge {
+  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 30px;
+  font-weight: 600;
+  display: inline-block;
+  margin-top: 4px;
+}
+
+.store-visit-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+}
+
+.store-visit-btn:hover {
+  background: #2563eb;
+  transform: scale(1.02);
+}
+
+/* ===== أنماط المنتجات المكبرة (العرض الأساسي) ===== */
+.products-horizontal {
+  padding: 15px;
+  overflow-x: auto;
+  white-space: nowrap;
+  background: #f9fcff;
+  margin-bottom: 20px;
+  border-radius: 20px;
+  scrollbar-width: thin;
+}
+
+.products-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.products-horizontal::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.products-track {
+  display: inline-flex;
+  gap: 16px;
+}
+
+.product-item {
+  width: 180px;
+  display: inline-block;
+  text-align: center;
+  background: var(--product-bg, #ffffff);
+  border-radius: 18px;
+  padding: 12px 10px;
+  border: 1px solid #e9edf2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  white-space: normal;
+  color: var(--product-text, #1e293b);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  cursor: pointer;
+  vertical-align: top;
+}
+
+.product-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.product-item img {
+  width: 120px;
+  height: 120px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #f8fafc;
+  display: block;
+  margin: 0 auto 8px;
+}
+
+.product-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin: 4px 0 2px;
+  height: 2.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.price-container {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  align-items: baseline;
+  margin: 6px 0 4px;
+  font-size: 0.95rem;
+}
+
+.old-price {
+  color: #94a3b8;
+  text-decoration: line-through;
+  font-size: 0.8rem;
+}
+
+.new-price {
+  color: #3b82f6;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.product-visit-btn,
+.add-to-cart-btn,
+.like-btn,
+.favorite-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 30px;
+  padding: 5px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  text-decoration: none;
+  margin-top: 6px;
+  margin-left: 4px;
+}
+
+.add-to-cart-btn {
+  background: #10b981;
+}
+
+.like-btn,
+.favorite-btn {
+  background: transparent;
+  color: #64748b;
+  font-size: 1.2rem;
+  padding: 0;
+}
+
+.like-btn.liked {
+  color: #ef4444;
+}
+
+.favorite-btn.favorited {
+  color: var(--primary);
+}
+
+.product-visit-btn:hover,
+.add-to-cart-btn:hover {
+  transform: scale(1.04);
+  filter: brightness(1.05);
+}
+
+/* ============================================================
+   9. الإعلانات الدوارة (Carousel)
+   ============================================================ */
+.carousel-ad {
+  margin: 2rem 5%;
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: var(--ad-bg);
+  color: var(--ad-text);
+}
+
+.carousel-track {
+  display: flex;
+  transition: transform 0.5s ease;
+}
+
+.carousel-slide {
+  flex: 0 0 100%;
+  text-align: center;
+  padding: 20px;
+}
+
+.carousel-slide img {
+  max-width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 15px;
+}
+
+.carousel-slide a {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.carousel-slide a:hover {
+  opacity: 0.8;
+}
+
+/* ============================================================
+   10. واتساب العائم
+   ============================================================ */
+.whatsapp-float {
+  position: fixed;
+  bottom: 30px;
+  left: 30px;
+  background: #25d366;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--transition), transform var(--transition);
+  text-decoration: none;
+}
+
+.whatsapp-float:hover {
+  background: #128C7E;
+  transform: scale(1.1);
+}
+
+/* ============================================================
+   11. التقييمات
+   ============================================================ */
+.testimonials-section {
+  background: white;
+  border-radius: 40px;
+  padding: 2rem 5%;
+  margin: 2rem 5%;
+}
+
+.testimonials-title {
+  font-size: 2rem;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.testimonials-horizontal {
+  overflow-x: auto;
+  cursor: grab;
+  padding-bottom: 10px;
+  scrollbar-width: thin;
+}
+
+.testimonials-horizontal::-webkit-scrollbar {
+  height: 6px;
+}
+
+.testimonials-horizontal::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.testimonials-track {
+  display: flex;
+  gap: 20px;
+  width: max-content;
+}
+
+.testimonial-card {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 25px;
+  width: 300px;
+  flex-shrink: 0;
+  transition: transform var(--transition);
+}
+
+.testimonial-card:hover {
+  transform: translateY(-3px);
+}
+
+.customer-img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #3b82f6;
+  margin-bottom: 10px;
+}
+
+.customer-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+.customer-rating {
+  color: #fbbf24;
+  margin-bottom: 8px;
+}
+
+.customer-review {
+  font-size: 0.95rem;
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+/* ============================================================
+   12. شارات الثقة
+   ============================================================ */
+.trust-badges {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 20px 5%;
+  background: #f8fafc;
+}
+
+.trust-badges img {
+  height: 40px;
+  width: auto;
+  transition: transform var(--transition);
+}
+
+.trust-badges img:hover {
+  transform: scale(1.1);
+}
+
+/* ============================================================
+   13. التذييل
+   ============================================================ */
+.footer-info {
+  background: white;
+  border-radius: 40px;
+  padding: 2rem 5%;
+  margin: 2rem 5%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 30px;
+}
+
+.footer-info h3 {
+  margin-bottom: 15px;
+  color: var(--secondary);
+}
+
+.social-icons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.social-icons a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  color: var(--secondary);
+  font-size: 1.3rem;
+  transition: background var(--transition), transform var(--transition);
+  text-decoration: none;
+}
+
+.social-icons a:hover {
+  background: var(--primary);
+  transform: scale(1.1);
+}
+
+.payment-methods {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.payment-methods i {
+  font-size: 2.5rem;
+  color: #1e293b;
+  transition: transform var(--transition);
+}
+
+.payment-methods i:hover {
+  transform: scale(1.1);
+}
+
+.copyright {
+  text-align: center;
+  padding: 20px;
+  color: var(--text-light);
+  border-top: 1px solid var(--border-color);
+}
+
+/* ============================================================
+   14. المسابقات
+   ============================================================ */
+.contests-bar {
+  background: #8b5cf6;
+  color: white;
+  padding: 10px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.contests-content {
+  display: inline-block;
+  animation: ticker 30s linear infinite;
+}
+
+.contest-item {
+  display: inline-block;
+  margin: 0 30px;
+}
+
+.contest-item i {
+  margin-left: 5px;
+}
+
+/* ============================================================
+   15. السلة الجانبية
+   ============================================================ */
+.cart-sidebar {
+  position: fixed;
+  top: 0;
+  left: -400px;
+  width: 350px;
+  height: 100%;
+  background: white;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: left 0.3s ease;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.cart-sidebar.open {
+  left: 0;
+}
+
+.cart-sidebar h3 {
+  margin-bottom: 20px;
+  color: var(--secondary);
+}
+
+.cart-item {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 10px;
+}
+
+.cart-item img {
+  width: 50px;
+  height: 50px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.cart-item-details {
+  flex: 1;
+}
+
+.cart-item-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.cart-item-price {
+  color: #3b82f6;
+}
+
+.cart-item-remove {
+  color: #ef4444;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.cart-item-remove:hover {
+  color: #b91c1c;
+}
+
+.cart-total {
+  margin-top: 20px;
+  font-weight: 700;
+  font-size: 1.2rem;
+  border-top: 2px solid var(--border-color);
+  padding-top: 10px;
+}
+
+.cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.cart-actions button {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.cart-actions button.whatsapp {
+  background: #25d366;
+}
+
+.cart-actions button.email {
+  background: #64748b;
+}
+
+.cart-actions button.chat {
+  background: var(--primary-dark);
+}
+
+.cart-actions button:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+.close-cart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.close-cart:hover {
+  color: #ef4444;
+}
+
+/* ============================================================
+   16. مودال المنتج
+   ============================================================ */
+.product-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+}
+
+.product-modal-content {
+  background: white;
+  border-radius: 40px;
+  padding: 30px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.product-modal-content img {
+  width: 200px;
+  height: 200px;
+  border-radius: 20px;
+  object-fit: cover;
+  margin-bottom: 20px;
+}
+
+.product-modal-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: color var(--transition);
+}
+
+.product-modal-close:hover {
+  color: #ef4444;
+}
+
+.share-buttons {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+  margin-top: 15px;
+}
+
+.share-buttons a,
+.share-buttons button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: var(--secondary);
+  font-size: 1.3rem;
+  transition: background var(--transition), transform var(--transition);
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.share-buttons a:hover,
+.share-buttons button:hover {
+  transform: scale(1.1);
+}
+
+.share-buttons a.whatsapp:hover {
+  background: #25d366;
+  color: white;
+}
+
+.share-buttons a.facebook:hover {
+  background: #1877f2;
+  color: white;
+}
+
+.share-buttons a.twitter:hover {
+  background: #1da1f2;
+  color: white;
+}
+
+/* ============================================================
+   17. نموذج الاتصال
+   ============================================================ */
+.contact-form {
+  max-width: 600px;
+  margin: 2rem auto;
+  background: white;
+  border-radius: 40px;
+  padding: 2rem;
+}
+
+.contact-form h2 {
+  margin-bottom: 20px;
+}
+
+.contact-form input,
+.contact-form textarea {
+  width: 100%;
+  padding: 12px;
+  border-radius: 40px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 15px;
+  font-size: 1rem;
+  transition: border-color var(--transition), box-shadow var(--transition);
+  font-family: var(--font-family);
+}
+
+.contact-form input:focus,
+.contact-form textarea:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.2);
+}
+
+.contact-form button {
+  background: var(--primary);
+  color: var(--secondary);
+  border: none;
+  padding: 12px 30px;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+
+.contact-form button:hover {
+  background: var(--primary-dark);
+  transform: scale(1.02);
+}
+
+/* ============================================================
+   18. صفحة الملف الشخصي
+   ============================================================ */
+.profile-page {
+  padding: 2rem;
+  background: white;
+  border-radius: 40px;
+  margin: 2rem;
+}
+
+.profile-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-tab {
+  background: none;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text-light);
+  border-radius: 40px;
+  transition: background var(--transition), color var(--transition);
+  font-family: var(--font-family);
+}
+
+.profile-tab.active {
+  background: var(--primary);
+  color: var(--secondary);
+}
+
+.profile-tab:hover:not(.active) {
+  background: var(--border-color);
+}
+
+.profile-products {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.profile-product-card {
+  background: #f8fafc;
+  border-radius: 20px;
+  padding: 15px;
+  text-align: center;
+  transition: transform var(--transition);
+}
+
+.profile-product-card:hover {
+  transform: translateY(-3px);
+}
+
+.profile-product-card img {
+  width: 100px;
+  height: 100px;
+  border-radius: 15px;
+  object-fit: cover;
+  margin: 0 auto 10px;
+}
+
+/* ============================================================
+   19. أزرار عامة
+   ============================================================ */
+.back-home-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.5rem;
+  border-radius: 40px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition);
+  margin-bottom: 1rem;
+  font-family: var(--font-family);
+}
+
+.back-home-btn:hover {
+  background: #2563eb;
+}
+
+.visitor-counter {
+  background: var(--primary);
+  color: var(--secondary);
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-weight: 700;
+  text-align: center;
+  margin: 10px 0;
+  display: inline-block;
+}
+
+/* ============================================================
+   20. إشعارات (Toast)
+   ============================================================ */
+.toast-message {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  background: #10b981;
+  color: white;
+  padding: 12px 24px;
+  border-radius: 40px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 9999;
+  animation: slideIn 0.3s ease;
+  max-width: 90%;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ============================================================
+   21. عناصر مساعدة
+   ============================================================ */
+.multi-horizontal {
+  margin-bottom: 20px;
+}
+
+.multi-horizontal .section-title {
+  font-size: 1.2rem;
+  margin: 10px 0 5px;
+  color: var(--secondary);
+}
+
+.banner-images-carousel {
+  overflow: hidden;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+
+.banner-images-track {
+  display: flex;
+  transition: transform 0.5s ease;
+}
+
+.banner-images-track img {
+  flex-shrink: 0;
+  width: 100%;
+  max-height: 200px;
+  object-fit: cover;
+  border-radius: 20px;
+}
+
+.banner-text {
+  margin: 10px 0;
+}
+
+.share-popup {
+  position: absolute;
+  background: white;
+  border-radius: 40px;
+  padding: 10px 15px;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  gap: 15px;
+  z-index: 1000;
+  direction: ltr;
+}
+
+.share-popup a,
+.share-popup button {
+  color: #1e293b;
+  font-size: 1.5rem;
+  transition: transform var(--transition);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.share-popup a:hover,
+.share-popup button:hover {
+  transform: scale(1.2);
+}
+
+/* ============================================================
+   22. رفع الصور (مالك المتجر)
+   ============================================================ */
+.store-owner-upload {
+  margin-top: 15px;
+  padding: 15px;
+  background: #f1f5f9;
+  border-radius: 20px;
+}
+
+.store-owner-upload input {
+  margin: 5px 0;
+  padding: 8px;
+  border-radius: 20px;
+  border: 1px solid #cbd5e1;
+  width: 100%;
+}
+
+/* ============================================================
+   23. التجاوب العام (مع الحفاظ على عدد الأعمدة المحدد بالإعدادات)
+   ============================================================ */
+@media (max-width: 1200px) {
+  .index-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 992px) {
+  .index-grid {
+    gap: 16px;
+  }
+  .stores-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+  header h1 {
+    font-size: 2.2rem;
+  }
+  header p {
+    font-size: 1.2rem;
+  }
+  .footer-info {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .social-icons {
+    justify-content: center;
+  }
+  .payment-methods {
+    justify-content: center;
+  }
+  /* تكييف المنتجات للأجهزة اللوحية */
+  .product-item {
+    width: 160px;
+  }
+  .product-item img {
+    width: 100px;
+    height: 100px;
+  }
+  .product-name {
+    font-size: 0.85rem;
+  }
+  .new-price {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .top-bar {
+    flex-wrap: wrap;
+    padding: 0.4rem 1rem;
+    gap: 5px;
+  }
+  .top-bar-left>span:first-child {
+    font-size: 0.8rem;
+  }
+  .top-bar-left .flag {
+    width: 24px;
+    height: 24px;
+  }
+  .profile-link,
+  .cart-icon {
+    font-size: 1.1rem;
+  }
+  .admin-link {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.7rem;
+  }
+  .cart-count {
+    width: 16px;
+    height: 16px;
+    font-size: 0.5rem;
+    top: -5px;
+    right: -6px;
+  }
+
+  .category-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .category-featured-image {
+    width: 100%;
+    max-width: 300px;
+    height: auto;
+    aspect-ratio: 3/2;
+  }
+
+  .cart-sidebar {
+    width: 100%;
+    left: -100%;
+  }
+
+  .index-grid {
+    gap: 12px;
+  }
+  .index-content {
+    padding: 10px 8px 14px;
+  }
+  .index-icon {
+    font-size: 1.3rem;
+  }
+  .index-title {
+    font-size: 0.85rem;
+  }
+  .index-image-wrapper {
+    aspect-ratio: 1 / 1.1;
+  }
+
+  .stores-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* تكييف المنتجات للهواتف المتوسطة */
+  .product-item {
+    width: 150px;
+    padding: 10px;
+  }
+  .product-item img {
+    width: 90px;
+    height: 90px;
+  }
+  .product-name {
+    font-size: 0.8rem;
+  }
+  .product-visit-btn,
+  .add-to-cart-btn {
+    font-size: 0.7rem;
+    padding: 4px 10px;
+  }
+
+  .testimonials-track .testimonial-card {
+    width: 260px;
+  }
+
+  header h1 {
+    font-size: 1.8rem;
+  }
+  header p {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 500px) {
+  .top-bar {
+    padding: 0.3rem 0.8rem;
+    gap: 4px;
+  }
+  .top-bar-left>span:first-child {
+    font-size: 0.7rem;
+  }
+  .top-bar-left .flag {
+    width: 20px;
+    height: 20px;
+  }
+  .profile-link,
+  .cart-icon {
+    font-size: 1rem;
+  }
+  .admin-link {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.5rem;
+  }
+  .cart-count {
+    width: 14px;
+    height: 14px;
+    font-size: 0.45rem;
+    top: -4px;
+    right: -5px;
+  }
+
+  .index-grid {
+    gap: 12px;
+  }
+  .index-item {
+    border-radius: 16px;
+  }
+  .index-content {
+    padding: 10px 8px 14px;
+  }
+  .index-icon {
+    font-size: 1.3rem;
+  }
+  .index-title {
+    font-size: 0.85rem;
+  }
+  .index-image-wrapper {
+    aspect-ratio: 1 / 1.1;
+  }
+
+  /* تكييف المنتجات للهواتف الصغيرة */
+  .product-item {
+    width: 130px;
+    padding: 8px;
+  }
+  .product-item img {
+    width: 75px;
+    height: 75px;
+  }
+  .product-name {
+    font-size: 0.75rem;
+  }
+  .product-visit-btn,
+  .add-to-cart-btn {
+    font-size: 0.65rem;
+    padding: 3px 8px;
+    margin-top: 4px;
+  }
+  .new-price {
+    font-size: 0.9rem;
+  }
+
+  .search-container {
+    padding: 0.5rem 1rem;
+  }
+  .search-bar input {
+    font-size: 0.85rem;
+  }
+
+  .testimonials-track .testimonial-card {
+    width: 220px;
+    padding: 15px;
+  }
+
+  .contact-form {
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+
+  .profile-page {
+    padding: 1rem;
+    margin: 1rem;
+  }
+  .profile-tab {
+    font-size: 0.9rem;
+    padding: 8px 14px;
+  }
+
+  .whatsapp-float {
+    width: 50px;
+    height: 50px;
+    font-size: 25px;
+    bottom: 20px;
+    left: 20px;
+  }
+
+  .footer-info {
+    padding: 1.5rem 5%;
+    margin: 1rem 5%;
+  }
+}
+
+@media (max-width: 400px) {
+  .index-grid {
+    gap: 8px;
+  }
+  .index-item {
+    border-radius: 14px;
+  }
+  .index-content {
+    padding: 8px 6px 10px;
+  }
+  .index-icon {
+    font-size: 1.1rem;
+  }
+  .index-title {
+    font-size: 0.75rem;
+  }
+  .index-image-wrapper {
+    aspect-ratio: 1 / 1;
+  }
+  .store-card .store-header {
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+  .store-info h3 {
+    font-size: 1rem;
+  }
+  /* تكييف المنتجات للشاشات الصغيرة جداً */
+  .product-item {
+    width: 110px;
+    padding: 6px;
+  }
+  .product-item img {
+    width: 65px;
+    height: 65px;
+  }
+  .product-name {
+    font-size: 0.7rem;
+    height: 2.2em;
+  }
+  .product-visit-btn,
+  .add-to-cart-btn {
+    font-size: 0.6rem;
+    padding: 2px 6px;
+  }
+  .old-price {
+    font-size: 0.6rem;
+  }
+  .new-price {
+    font-size: 0.8rem;
+  }
+}
+
+/* ============================================================
+   24. أنماط إضافية للوحة التحكم (admin)
+   ============================================================ */
+.admin-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+}
+
+.admin-card {
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 30px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border: 1px solid #334155;
+  transition: transform 0.3s;
+  color: #e2e8f0;
+}
+
+.admin-card:hover {
+  transform: translateY(-5px);
+}
+
+.admin-card h2 {
+  color: var(--primary);
+  margin-bottom: 15px;
+  border-bottom: 2px solid #334155;
+  padding-bottom: 10px;
+}
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.admin-form input,
+.admin-form textarea,
+.admin-form select {
+  padding: 12px;
+  border-radius: 40px;
+  border: none;
+  background: #1e293b;
+  color: white;
+  font-family: var(--font-family);
+}
+
+.admin-form input::placeholder,
+.admin-form textarea::placeholder {
+  color: #94a3b8;
+}
+
+.admin-form button {
+  background: var(--primary);
+  color: var(--secondary);
+  border: none;
+  padding: 12px;
+  border-radius: 40px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.admin-form button:hover {
+  filter: brightness(1.05);
+}
+
+.admin-list {
+  background: #1e293b;
+  border-radius: 20px;
+  padding: 15px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.admin-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.admin-list::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 10px;
+}
+
+.admin-item {
+  background: #2d3a4f;
+  padding: 10px 15px;
+  border-radius: 40px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.admin-item button {
+  background: #ef4444;
+  color: white;
+  border: none;
+  padding: 5px 15px;
+  border-radius: 30px;
+  cursor: pointer;
+  margin-right: 5px;
+  font-family: var(--font-family);
+}
+
+.admin-item button.edit {
+  background: #3b82f6;
+}
+
+.admin-item button.toggle-hidden {
+  background: #f59e0b;
+}
+
+.hidden-store {
+  opacity: 0.6;
+  background: #4b5563;
+}
+
+.admin-container .back-link {
+  display: inline-block;
+  background: #3b82f6;
+  color: white;
+  padding: 10px 25px;
+  border-radius: 40px;
+  text-decoration: none;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
+.admin-container .back-link:hover {
+  background: #2563eb;
+}
+
+/* ============================================================
+   25. تنسيقات إضافية (العلم، حقول التواصل، الحالة، إلخ)
+   ============================================================ */
+#saudiFlagDropZone {
+  border: 2px dashed var(--primary);
+  border-radius: 20px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #1e293b;
+  transition: border-color var(--transition);
+  margin-top: 10px;
+}
+
+#saudiFlagDropZone:hover {
+  border-color: #10b981;
+}
+
+#saudiFlagPreview {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto 10px;
+  background: var(--secondary);
+  border: 3px solid var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#saudiFlagPreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+#saudiFlagPreview span {
+  color: #94a3b8;
+  font-size: 0.8rem;
+}
+
+.social-field-group {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 5px 0;
+  background: var(--secondary);
+  padding: 8px 12px;
+  border-radius: 40px;
+}
+
+.social-field-group i {
+  width: 30px;
+  color: var(--primary);
+}
+
+.social-field-group label {
+  min-width: 80px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.social-field-group input[type="text"] {
+  flex: 1;
+  min-width: 150px;
+  padding: 8px 15px;
+  border-radius: 40px;
+  border: none;
+  background: #1e293b;
+  color: white;
+}
+
+.social-field-group label:last-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #cbd5e1;
+  min-width: auto;
+}
+
+.status-badge {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: inline-block;
+}
+
+.status-online {
+  background: #10b981;
+  color: white;
+}
+
+.status-offline {
+  background: #ef4444;
+  color: white;
+}
+
+.login-box {
+  background: var(--secondary);
+  padding: 40px;
+  border-radius: 40px;
+  text-align: center;
+  width: 300px;
+}
+
+.login-box h2 {
+  color: var(--primary);
+  margin-bottom: 20px;
+}
+
+.login-box input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 40px;
+  border: none;
+  margin-bottom: 20px;
+  background: #1e293b;
+  color: white;
+}
+
+.login-box button {
+  background: var(--primary);
+  color: var(--secondary);
+  border: none;
+  padding: 12px 30px;
+  border-radius: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  width: 100%;
+}
+
+.force-save-btn {
+  background: var(--primary-dark);
+  color: var(--secondary);
+  border: none;
+  padding: 8px 15px;
+  border-radius: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+}
+
+.import-export {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.import-export button {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: filter var(--transition);
+}
+
+.import-export button:hover {
+  filter: brightness(1.1);
+}
+
+.spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid #fff;
+  border-top: 2px solid var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================
+   26. أزرار المعاينة والنشر
+   ============================================================ */
+.preview-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 12px 25px;
+  border-radius: 40px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 9999;
+  transition: background var(--transition), transform var(--transition);
+  display: none;
+}
+
+.preview-btn:hover {
+  background: #2563eb;
+  transform: scale(1.05);
+}
+
+/* ============================================================
+   27. إصلاح للـ Pull to Refresh indicator
+   ============================================================ */
+#pullRefreshIndicator {
+  position: fixed;
+  top: -60px;
+  left: 0;
+  width: 100%;
+  height: 60px;
+  background: var(--primary);
+  color: var(--secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: top 0.2s ease;
+  z-index: 10000;
+  font-family: var(--font-family);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
