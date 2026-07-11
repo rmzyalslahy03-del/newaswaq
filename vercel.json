@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/((?!icons|_next|favicon).*)", "destination": "/index.html" }
+    {
+      "source": "/:path((?!admin\\.html|common\\.js|service-worker\\.js|manifest\\.json|redirect\\.html|sitemap\\.xml|robots\\.txt|favicon\\.ico|icons|_next|assets).*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
     {
