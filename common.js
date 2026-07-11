@@ -1,12 +1,91 @@
-// ================== Supabase Client ==================
-const SUPABASE_URL = "https://rltdptxnpotfymjqtsvp.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_SBYmfZaJmMsBzbIpDWvh7w_upcmdCNo";
+// ============================================================
+// common.js - الملف المشترك النهائي (نسخة آمنة ومعدلة)
+// يحتوي على: Supabase, IndexedDB, إدارة البيانات, الصور,
+// المستخدمين, السلة, التصميم, الأدوات المساعدة + تشفير كلمة المرور
+// مع حساب تلقائي لتجزئة "202122"
+// ============================================================
+
+// ================== حقوق التطوير ==================
+// هذا الموقع مطور بواسطة المهندس رمزي الصلاحي
+// جميع الحقوق محفوظة لمجمع أسواق ريادة المستهلك © 2026
+// ===================================================
+
+// ================== إعدادات الأمان والمتغيرات البيئية ==================
+// يمكن تجاوز هذه القيم عبر window.ENV (مثال: في ملف env.js)
+window.ENV = window.ENV || {};
+
+// مفاتيح Supabase (يُفضل وضعها في متغيرات بيئية على Vercel)
+const SUPABASE_URL = window.ENV.SUPABASE_URL || "https://rltdptxnpotfymjqtsvp.supabase.co";
+const SUPABASE_ANON_KEY = window.ENV.SUPABASE_ANON_KEY || "sb_publishable_SBYmfZaJmMsBzbIpDWvh7w_upcmdCNo";
+
+// كلمة المرور الافتراضية (تُستخدم للتجزئة التلقائية)
+const DEFAULT_PASSWORD = "202122";
+
+// ================== دوال التشفير ==================
+// متغير عام لتخزين التجزئة الصحيحة بعد حسابها
+let ADMIN_PASSWORD_HASH = null;
+
+/**
+ * توليد تجزئة SHA-256 لنص معين
+ * @param {string} message - النص المراد تجزئته
+ * @returns {Promise<string>} - التجزئة بصيغة سداسية عشرية
+ */
+async function hashPassword(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * التحقق من صحة كلمة المرور
+ * @param {string} inputPassword - كلمة المرور المدخلة
+ * @param {string} storedHash - التجزئة المخزنة (اختياري)
+ * @returns {Promise<boolean>}
+ */
+async function verifyPassword(inputPassword, storedHash = null) {
+    // إذا لم يتم تمرير تجزئة، نستخدم التجزئة المخزنة عالمياً
+    const hashToCompare = storedHash || ADMIN_PASSWORD_HASH;
+    
+    // إذا لم تكن التجزئة محسوبة بعد (لأي سبب)، نحسبها فوراً
+    if (!hashToCompare) {
+        await initializeSecurity();
+        return verifyPassword(inputPassword);
+    }
+    
+    const inputHash = await hashPassword(inputPassword);
+    return inputHash === hashToCompare;
+}
+
+/**
+ * تهيئة الأمان: حساب تجزئة كلمة المرور الافتراضية
+ */
+async function initializeSecurity() {
+    if (!ADMIN_PASSWORD_HASH) {
+        // حساب التجزئة لكلمة المرور الافتراضية "202122"
+        ADMIN_PASSWORD_HASH = await hashPassword(DEFAULT_PASSWORD);
+        console.log('✅ تم تهيئة الأمان بنجاح (تجزئة كلمة المرور محسوبة تلقائياً)');
+        
+        // يمكن للمطور تجاوزها عبر window.ENV
+        if (window.ENV.ADMIN_PASSWORD_HASH) {
+            ADMIN_PASSWORD_HASH = window.ENV.ADMIN_PASSWORD_HASH;
+            console.log('✅ تم استخدام التجزئة من window.ENV');
+        }
+    }
+    return ADMIN_PASSWORD_HASH;
+}
+
+// تهيئة الأمان فور تحميل الملف (في الخلفية)
+initializeSecurity();
+
+// ================== إعدادات Supabase Client ==================
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ================== IndexedDB Helper ==================
+// ================== إعدادات IndexedDB ==================
 const DB_NAME = 'MarketplaceDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'appData';
+const BACKUP_STORE_NAME = 'appDataBackup';
 
 function openDB() {
     return new Promise((resolve, reject) => {
@@ -16,51 +95,72 @@ function openDB() {
             if (!db.objectStoreNames.contains(STORE_NAME)) {
                 db.createObjectStore(STORE_NAME, { keyPath: 'id' });
             }
+            if (!db.objectStoreNames.contains(BACKUP_STORE_NAME)) {
+                db.createObjectStore(BACKUP_STORE_NAME, { keyPath: 'id' });
+            }
         };
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
 }
 
-async function saveToIndexedDB(data) {
+async function saveToIndexedDB(data, storeName = STORE_NAME) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        const store = tx.objectStore(STORE_NAME);
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
         const request = store.put({ id: 'main', data });
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
     });
 }
 
-async function loadFromIndexedDB() {
+async function loadFromIndexedDB(storeName = STORE_NAME) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const store = tx.objectStore(STORE_NAME);
+        const tx = db.transaction(storeName, 'readonly');
+        const store = tx.objectStore(storeName);
         const request = store.get('main');
         request.onsuccess = () => resolve(request.result?.data || null);
         request.onerror = () => reject(request.error);
     });
 }
 
-async function deleteFromIndexedDB() {
+async function deleteFromIndexedDB(storeName = STORE_NAME) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        const store = tx.objectStore(STORE_NAME);
+        const tx = db.transaction(storeName, 'readwrite');
+        const store = tx.objectStore(storeName);
         const request = store.delete('main');
         request.onsuccess = () => resolve();
         request.onerror = () => reject(request.error);
     });
 }
 
-// ================== Supabase Storage Helpers ==================
+async function createBackup() {
+    const data = await loadFromIndexedDB(STORE_NAME);
+    if (data) {
+        await saveToIndexedDB(data, BACKUP_STORE_NAME);
+        return true;
+    }
+    return false;
+}
+
+async function restoreBackup() {
+    const backup = await loadFromIndexedDB(BACKUP_STORE_NAME);
+    if (backup) {
+        await saveToIndexedDB(backup, STORE_NAME);
+        return backup;
+    }
+    return null;
+}
+
+// ================== دوال Storage (رفع وحذف الصور) ==================
 const STORAGE_BUCKET = 'images';
 
 async function uploadImage(file, path) {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
 
     try {
         const { data, error } = await supabaseClient.storage
@@ -78,7 +178,7 @@ async function uploadImage(file, path) {
     } catch (e) {
         clearTimeout(timeoutId);
         if (e.name === 'AbortError') {
-            throw new Error('انتهت مهلة رفع الصورة (30 ثانية)');
+            throw new Error('انتهت مهلة رفع الصورة (60 ثانية)');
         }
         throw e;
     }
@@ -88,22 +188,78 @@ async function deleteImage(path) {
     if (!path) return;
     let filePath = path;
     if (path.startsWith('http')) {
-        const url = new URL(path);
-        const parts = url.pathname.split('/');
-        const bucketIndex = parts.indexOf('public') + 1;
-        if (bucketIndex && parts[bucketIndex] === STORAGE_BUCKET) {
-            filePath = parts.slice(bucketIndex + 1).join('/');
-        } else {
+        try {
+            const url = new URL(path);
+            const parts = url.pathname.split('/');
+            const bucketIndex = parts.indexOf('public') + 1;
+            if (bucketIndex && parts[bucketIndex] === STORAGE_BUCKET) {
+                filePath = parts.slice(bucketIndex + 1).join('/');
+            } else {
+                return;
+            }
+        } catch (e) {
+            console.warn('⚠️ رابط غير صالح للحذف:', path);
             return;
         }
     }
     const { error } = await supabaseClient.storage
         .from(STORAGE_BUCKET)
         .remove([filePath]);
-    if (error) console.warn("فشل حذف الصورة القديمة:", error);
+    if (error) console.warn('⚠️ فشل حذف الصورة:', error);
 }
 
-// ================== إدارة البيانات مع IndexedDB و Supabase ==================
+async function uploadAndReplaceImage(file, oldImageUrl, folder = 'images') {
+    if (!file) return oldImageUrl;
+    const uniqueName = `${folder}/${Date.now()}_${file.name.replace(/\s/g, '_')}`;
+    const newUrl = await uploadImage(file, uniqueName);
+    if (oldImageUrl) {
+        try {
+            await deleteImage(oldImageUrl);
+            console.log('✅ تم حذف الصورة القديمة:', oldImageUrl);
+        } catch (e) {
+            console.warn('⚠️ تعذر حذف الصورة القديمة:', e);
+        }
+    }
+    return newUrl;
+}
+
+// ================== ضغط الصور ==================
+function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+                if (width > maxWidth) {
+                    height = height * (maxWidth / width);
+                    width = maxWidth;
+                }
+                if (height > maxHeight) {
+                    width = width * (maxHeight / height);
+                    height = maxHeight;
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                canvas.toBlob((blob) => {
+                    const compressedFile = new File([blob], file.name, {
+                        type: 'image/jpeg',
+                        lastModified: Date.now()
+                    });
+                    resolve(compressedFile);
+                }, 'image/jpeg', quality);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+// ================== إدارة البيانات مع Supabase و IndexedDB ==================
 window.appData = null;
 let isOnline = navigator.onLine;
 
@@ -131,7 +287,6 @@ function getWhatsAppNumber() {
     return DEFAULT_WHATSAPP_NUMBER;
 }
 
-// ================== دالة ensureSocialMedia (لضمان وجود بيانات التواصل) ==================
 function ensureSocialMedia(data) {
     if (!data) return data;
     if (!data.footer) data.footer = {};
@@ -178,142 +333,21 @@ async function loadAppData() {
             window.appData = await fetchFromSupabase();
             if (window.appData) await saveToIndexedDB(window.appData);
         } else {
-            // في حالة عدم وجود اتصال ولا بيانات محلية، ننشئ بيانات افتراضية مؤقتة
-            window.appData = createDefaultData();
-            await saveToIndexedDB(window.appData);
+            throw new Error('لا توجد بيانات محلية ولا اتصال');
         }
     }
     return window.appData;
 }
 
-// ================== إنشاء بيانات افتراضية للاستخدام عند الفشل ==================
-function createDefaultData() {
-    return {
-        header: {
-            title: 'مجمع أسواق ريادة المستهلك',
-            subtitle: 'أفضل المتاجر والمنتجات بأفضل الأسعار',
-            images: ['https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=80']
-        },
-        ticker: ['مرحباً بكم في مجمع أسواق ريادة المستهلك', 'أفضل العروض بانتظاركم'],
-        design: {
-            categoryBg: 'linear-gradient(145deg, #f9eef7, #f3d9e8)',
-            categoryText: '#9b4d96',
-            categoryFontSize: '2rem',
-            storeBg: '#ffffff',
-            storeText: '#1e293b',
-            storeFontSize: '1.3rem',
-            productBg: '#ffffff',
-            productText: '#1e293b',
-            productFontSize: '0.85rem',
-            adBg: 'linear-gradient(90deg, #fbbf24, #f59e0b)',
-            adText: '#0f172a',
-            adFontSize: '1.1rem',
-            generalFontSize: '1rem'
-        },
-        categories: [],
-        stores: {},
-        products: {},
-        testimonials: [],
-        footer: {
-            email: 'info@example.com',
-            phone: '966500000000',
-            whatsapp: '966500000000',
-            socialMedia: [
-                { platform: 'whatsapp', url: 'https://wa.me/967778562099', active: true },
-                { platform: 'facebook', url: '#', active: true },
-                { platform: 'twitter', url: '#', active: true },
-                { platform: 'instagram', url: '#', active: true }
-            ],
-            payments: ['fab fa-cc-visa', 'fab fa-cc-mastercard', 'fab fa-apple-pay']
-        },
-        settings: {
-            currency: 'SAR',
-            language: 'ar',
-            showSaudiFlag: true,
-            cartEnabled: true,
-            enableUserProfile: true,
-            orderMethods: {
-                whatsapp: true,
-                email: true,
-                chat: true
-            },
-            contactEmail: 'admin@example.com',
-            whatsappNumber: '967778562099',
-            visitorCount: 0,
-            saudiFlagUrl: '',
-            trackingCode: '',
-            contests: [],
-            trustBadges: [],
-            marketPolicy: {
-                terms: 'هنا تكتب شروط البيع والشراء...',
-                returns: 'هنا تكتب سياسة الاسترجاع والاستبدال...',
-                usage: 'هنا تكتب شروط الاستخدام...'
-            },
-            aboutUs: {
-                description: 'مرحباً بكم في مجمع أسواق ريادة المستهلك...',
-                mission: 'تقديم أفضل تجربة تسوق للمستهلكين...',
-                vision: 'الريادة في الأسواق الإلكترونية...'
-            }
-        },
-        carousel: [],
-        messages: []
-    };
-}
-
-// ================== جلب البيانات من Supabase (محسّنة للزوار الجدد) ==================
+// ================== جلب البيانات من Supabase ==================
 async function fetchFromSupabase() {
     try {
-        // 1. محاولة جلب الإعدادات
         const { data: settings, error: settingsErr } = await supabaseClient
             .from('settings')
             .select('data')
             .eq('id', 'main')
             .single();
-
-        // 2. إذا فشل جلب الإعدادات (لا توجد أو ممنوعة بـ RLS)
-        if (settingsErr) {
-            console.warn('⚠️ فشل جلب الإعدادات من Supabase (ربما RLS):', settingsErr.message);
-            // نحاول جلب بقية البيانات (الفئات والمتاجر والمنتجات) مباشرة
-            const [categoriesRes, storesRes, productsRes] = await Promise.all([
-                supabaseClient.from('categories').select('*'),
-                supabaseClient.from('stores').select('*'),
-                supabaseClient.from('products').select('*')
-            ]);
-
-            const emptyStructure = createDefaultData();
-            if (!categoriesRes.error) emptyStructure.categories = categoriesRes.data || [];
-            if (!storesRes.error) {
-                const storesMap = {};
-                storesRes.data.forEach(store => {
-                    if (!storesMap[store.category]) storesMap[store.category] = [];
-                    if (!store.banners) store.banners = [];
-                    storesMap[store.category].push(store);
-                });
-                emptyStructure.stores = storesMap;
-            }
-            if (!productsRes.error) {
-                const productsMap = {};
-                productsRes.data.forEach(prod => {
-                    if (!productsMap[prod.storeId]) productsMap[prod.storeId] = [];
-                    productsMap[prod.storeId].push(prod);
-                });
-                emptyStructure.products = productsMap;
-            }
-
-            // محاولة جلب التقييمات والإعلانات أيضاً
-            try {
-                const testimonialsRes = await supabaseClient.from('testimonials').select('*');
-                if (!testimonialsRes.error) emptyStructure.testimonials = testimonialsRes.data || [];
-            } catch (e) {}
-            try {
-                const carouselRes = await supabaseClient.from('carousel').select('*');
-                if (!carouselRes.error) emptyStructure.carousel = carouselRes.data || [];
-            } catch (e) {}
-
-            return emptyStructure;
-        }
-
-        // 3. إذا كانت الإعدادات موجودة، نواصل الجلب الكامل
+        if (settingsErr && settingsErr.code !== 'PGRST116') throw settingsErr;
         if (!settings) return null;
 
         const [categoriesRes, storesRes, productsRes, testimonialsRes, carouselRes, messagesRes] = await Promise.all([
@@ -354,7 +388,7 @@ async function fetchFromSupabase() {
             messages: messagesRes.data || []
         };
 
-        // التأكد من وجود الحقول المطلوبة في settings
+        // ضمان وجود الحقول الأساسية
         if (!result.settings.visitorCount) result.settings.visitorCount = 0;
         if (!result.settings.saudiFlagUrl) result.settings.saudiFlagUrl = '';
         if (!result.settings.trackingCode) result.settings.trackingCode = '';
@@ -373,18 +407,23 @@ async function fetchFromSupabase() {
                 vision: "هنا تكتب رؤية السوق..."
             };
         }
+        if (!result.settings.orderMethods) {
+            result.settings.orderMethods = { whatsapp: true, email: true, chat: true };
+        }
+
+        // إعدادات الفهرس
+        if (!result.settings.indexDisplayMode) result.settings.indexDisplayMode = 'grid';
+        if (!result.settings.indexColumns) result.settings.indexColumns = 4;
 
         ensureSocialMedia(result);
         return result;
-
     } catch (e) {
         logAdminError(e, 'fetchFromSupabase');
-        console.error('❌ فشل جلب البيانات من Supabase، سيتم استخدام بيانات فارغة مؤقتاً', e);
-        return createDefaultData();
+        throw e;
     }
 }
 
-// ================== حفظ البيانات إلى Supabase (مع دعم الحفظ الجزئي) ==================
+// ================== حفظ البيانات إلى Supabase ==================
 async function saveAppData(force = false, tables = null) {
     if (!window.appData) return;
     await saveToIndexedDB(window.appData);
@@ -392,16 +431,15 @@ async function saveAppData(force = false, tables = null) {
         try {
             await Promise.race([
                 pushToSupabase(window.appData, tables),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة المزامنة')), 15000))
+                new Promise((_, reject) => setTimeout(() => reject(new Error('انتهت مهلة المزامنة (30 ثانية)')), 30000))
             ]);
         } catch (e) {
-            console.warn('فشل دفع البيانات للسحابة:', e);
+            console.warn('⚠️ فشل دفع البيانات للسحابة:', e);
             logAdminError(e, 'saveAppData push');
         }
     }
 }
 
-// ================== دفع البيانات إلى Supabase ==================
 async function pushToSupabase(data, tables = null) {
     const allTables = !tables || tables.length === 0;
 
@@ -564,19 +602,6 @@ function updateElementImage(selector, newSrc) {
     });
 }
 
-// ================== رفع الصور مع الحذف التلقائي ==================
-async function uploadAndReplaceImage(file, oldImageUrl, folder = 'images') {
-    if (!file) return oldImageUrl;
-    const uniqueName = `${folder}/${Date.now()}_${file.name.replace(/\s/g, '_')}`;
-    const newUrl = await uploadImage(file, uniqueName);
-    if (oldImageUrl) {
-        try {
-            await deleteImage(oldImageUrl);
-        } catch (e) { console.warn("تعذر حذف الصورة القديمة", e); }
-    }
-    return newUrl;
-}
-
 // ================== الدوال المساعدة ==================
 function sanitizeText(str) {
     if (!str) return '';
@@ -587,8 +612,8 @@ function sanitizeText(str) {
 
 function showToast(msg, type = 'success', isAdmin = false) {
     if (!isAdmin) {
-        const allowed = ['تم تحديث الموقع', 'جاري تحديث الموقع', 'تم إضافة المنتج للسلة', 'تم نسخ الرابط', 'تم تحميل الموقع بنجاح', 'لا توجد بيانات جديدة', 'يرجى المحاولة لاحقاً'];
-        if (!allowed.includes(msg)) {
+        const allowed = ['تم تحديث الموقع', 'جاري تحديث الموقع', 'تم إضافة المنتج للسلة', 'تم نسخ الرابط', 'تم تحميل الموقع بنجاح', 'لا توجد بيانات جديدة', 'يرجى المحاولة لاحقاً', '✅ تم تسجيل الدخول بنجاح', 'تم تسجيل الخروج'];
+        if (!allowed.includes(msg) && !msg.includes('تم حذف')) {
             msg = type === 'error' ? 'يرجى المحاولة لاحقاً' : 'تم تحديث الموقع';
         }
     }
@@ -598,6 +623,43 @@ function showToast(msg, type = 'success', isAdmin = false) {
     toast.style.background = type === 'error' ? '#ef4444' : '#10b981';
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
+}
+
+function getCurrencySymbol() {
+    if (!window.appData) return "ر.س";
+    const symbols = { SAR: "ر.س", USD: "$", OMR: "ر.ع.", QAR: "ر.ق", AED: "د.إ" };
+    return symbols[window.appData.settings?.currency] || "ر.س";
+}
+
+function translate(key, appData) {
+    if (!appData) return key;
+    if (appData.settings?.language === 'en') {
+        const translations = {
+            'عدد الزوار': 'Visitors',
+            'سلة التسوق': 'Shopping Cart',
+            'الإجمالي': 'Total',
+            'إرسال عبر واتساب': 'Send via WhatsApp',
+            'إرسال عبر البريد': 'Send via Email',
+            'محادثة مع المدير': 'Chat with Admin',
+            'إضافة للسلة': 'Add to cart',
+            'اطلب الان': 'Order now',
+            'آراء عملائنا': 'Testimonials',
+            'تواصل معنا': 'Contact us',
+            'البريد الإلكتروني': 'Email',
+            'الهاتف': 'Phone',
+            'خدمات الدفع': 'Payment Methods',
+            'طرق دفع آمنة ومتعددة': 'Secure multiple payment methods',
+            'جميع الحقوق محفوظة': 'All rights reserved',
+            'مجمع أسواق ريادة المستهلك': 'Consumer Leadership Markets',
+            'أفضل المتاجر والمنتجات بأفضل الأسعار': 'Best stores and products at best prices',
+            'العودة للرئيسية': 'Back to Home',
+            'زيارة المتجر الأصلي': 'Visit Original Store',
+            'زيارة المتجر': 'Visit Store',
+            'زيارة': 'Visit'
+        };
+        return translations[key] || key;
+    }
+    return key;
 }
 
 function handleImageUpload(fileInput, targetInputId, callback) {
@@ -612,51 +674,59 @@ function handleImageUpload(fileInput, targetInputId, callback) {
     }
 }
 
-// ================== إدارة المستخدمين والسلة ==================
+// ================== إدارة المستخدمين ==================
 let currentUser = JSON.parse(localStorage.getItem('currentUser')) || null;
 let users = JSON.parse(localStorage.getItem('users')) || [];
 let cart = JSON.parse(localStorage.getItem('cart')) || [];
 
 function saveUsers() { localStorage.setItem('users', JSON.stringify(users)); }
 
-function getCurrencySymbol() {
-    if (!window.appData) return "ر.س";
-    const symbols = { SAR: "ر.س", USD: "$", OMR: "ر.ع.", QAR: "ر.ق", AED: "د.إ" };
-    return symbols[window.appData.settings?.currency] || "ر.س";
-}
-
-function translate(key) {
-    if (!window.appData) return key;
-    if (window.appData.settings?.language === 'en') {
-        const translations = {
-            'عدد الزوار': 'Visitors', 'سلة التسوق': 'Shopping Cart', 'الإجمالي': 'Total',
-            'إرسال عبر واتساب': 'Send via WhatsApp', 'إرسال عبر البريد': 'Send via Email',
-            'محادثة مع المدير': 'Chat with Admin', 'إضافة للسلة': 'Add to cart', 'اطلب الان': 'Order now',
-            'آراء عملائنا': 'Testimonials', 'تواصل معنا': 'Contact us', 'البريد الإلكتروني': 'Email',
-            'الهاتف': 'Phone', 'خدمات الدفع': 'Payment Methods', 'طرق دفع آمنة ومتعددة': 'Secure multiple payment methods',
-            'جميع الحقوق محفوظة': 'All rights reserved', 'مجمع أسواق ريادة المستهلك': 'Consumer Leadership Markets',
-            'أفضل المتاجر والمنتجات بأفضل الأسعار': 'Best stores and products at best prices',
-            'العودة للرئيسية': 'Back to Home', 'زيارة المتجر الأصلي': 'Visit Original Store', 'زيارة': 'Visit',
-            'زيارة المتجر': 'Visit Store', 'إضافة للسلة': 'Add to cart'
-        };
-        return translations[key] || key;
-    }
-    return key;
-}
-
-// ================== دوال المستخدمين ==================
 function showLoginDialog() {
-    const loginHtml = `<div id="loginModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:white; padding:30px; border-radius:40px; width:300px;"><h3 style="margin-bottom:20px;">تسجيل الدخول</h3><input type="text" id="loginUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;"><input type="password" id="loginPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;"><button onclick="window.performLogin()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold;">دخول</button><button onclick="window.showRegisterDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">إنشاء حساب جديد</button><button onclick="document.getElementById('loginModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button></div></div>`;
+    if (!window.appData?.settings?.enableUserProfile) {
+        showToast('⚠️ ميزة تسجيل الدخول غير مفعلة حالياً', 'error');
+        return;
+    }
+    const loginHtml = `
+        <div id="loginModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;">
+            <div style="background:white; padding:30px; border-radius:40px; width:300px;">
+                <h3 style="margin-bottom:20px;">تسجيل الدخول</h3>
+                <input type="text" id="loginUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;">
+                <input type="password" id="loginPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;">
+                <button onclick="window.performLogin()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold; cursor:pointer;">دخول</button>
+                <button onclick="window.showRegisterDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">إنشاء حساب جديد</button>
+                <button onclick="document.getElementById('loginModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button>
+            </div>
+        </div>
+    `;
     document.body.insertAdjacentHTML('beforeend', loginHtml);
 }
 
 window.showRegisterDialog = function() {
+    if (!window.appData?.settings?.enableUserProfile) {
+        showToast('⚠️ ميزة إنشاء حساب غير مفعلة حالياً', 'error');
+        return;
+    }
     document.getElementById('loginModal')?.remove();
-    const registerHtml = `<div id="registerModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;"><div style="background:white; padding:30px; border-radius:40px; width:300px;"><h3 style="margin-bottom:20px;">إنشاء حساب جديد</h3><input type="text" id="regUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;"><input type="password" id="regPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;"><button onclick="window.performRegister()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold;">تسجيل</button><button onclick="window.showLoginDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">لديك حساب؟ سجل دخول</button><button onclick="document.getElementById('registerModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button></div></div>`;
+    const registerHtml = `
+        <div id="registerModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:10000;">
+            <div style="background:white; padding:30px; border-radius:40px; width:300px;">
+                <h3 style="margin-bottom:20px;">إنشاء حساب جديد</h3>
+                <input type="text" id="regUsername" placeholder="اسم المستخدم" style="width:100%; padding:10px; margin-bottom:10px; border-radius:40px; border:1px solid #ccc;">
+                <input type="password" id="regPassword" placeholder="كلمة المرور" style="width:100%; padding:10px; margin-bottom:20px; border-radius:40px; border:1px solid #ccc;">
+                <button onclick="window.performRegister()" style="background:#fbbf24; border:none; padding:10px; width:100%; border-radius:40px; font-weight:bold; cursor:pointer;">تسجيل</button>
+                <button onclick="window.showLoginDialog()" style="margin-top:10px; background:none; border:none; color:#3b82f6; cursor:pointer;">لديك حساب؟ سجل دخول</button>
+                <button onclick="document.getElementById('registerModal').remove()" style="margin-top:10px; background:none; border:none; color:#ef4444; cursor:pointer;">إلغاء</button>
+            </div>
+        </div>
+    `;
     document.body.insertAdjacentHTML('beforeend', registerHtml);
 };
 
 window.performLogin = function() {
+    if (!window.appData?.settings?.enableUserProfile) {
+        showToast('⚠️ ميزة تسجيل الدخول غير مفعلة', 'error');
+        return;
+    }
     const username = document.getElementById('loginUsername').value;
     const password = document.getElementById('loginPassword').value;
     const user = users.find(u => u.username === username && u.password === password);
@@ -665,14 +735,27 @@ window.performLogin = function() {
         localStorage.setItem('currentUser', JSON.stringify(user));
         document.getElementById('loginModal').remove();
         if (window.renderProfilePage) window.renderProfilePage();
-    } else alert('اسم المستخدم أو كلمة المرور غير صحيحة');
+        showToast('✅ تم تسجيل الدخول بنجاح', 'success');
+    } else {
+        showToast('❌ اسم المستخدم أو كلمة المرور غير صحيحة', 'error');
+    }
 };
 
 window.performRegister = function() {
+    if (!window.appData?.settings?.enableUserProfile) {
+        showToast('⚠️ ميزة إنشاء حساب غير مفعلة', 'error');
+        return;
+    }
     const username = document.getElementById('regUsername').value;
     const password = document.getElementById('regPassword').value;
-    if (!username || !password) { alert('الرجاء ملء جميع الحقول'); return; }
-    if (users.find(u => u.username === username)) { alert('اسم المستخدم موجود بالفعل'); return; }
+    if (!username || !password) {
+        showToast('⚠️ الرجاء ملء جميع الحقول', 'error');
+        return;
+    }
+    if (users.find(u => u.username === username)) {
+        showToast('⚠️ اسم المستخدم موجود بالفعل', 'error');
+        return;
+    }
     const newUser = { username, password, likes: [], favorites: [], purchases: [] };
     users.push(newUser);
     saveUsers();
@@ -680,22 +763,29 @@ window.performRegister = function() {
     localStorage.setItem('currentUser', JSON.stringify(newUser));
     document.getElementById('registerModal').remove();
     if (window.renderProfilePage) window.renderProfilePage();
-    supabaseClient.from('users').insert({
+    supabaseClient.from('users').upsert({
         username: newUser.username,
         password: newUser.password,
         likes: [],
         favorites: [],
         purchases: []
     }).then();
+    showToast('✅ تم إنشاء الحساب بنجاح', 'success');
 };
 
 window.logout = function() {
     currentUser = null;
     localStorage.removeItem('currentUser');
     if (window.showHomePage) window.showHomePage();
+    showToast('تم تسجيل الخروج', 'success');
 };
 
+// ================== دوال الإعجاب والمفضلة ==================
 window.toggleLike = async function(productId, storeId, btn) {
+    if (!window.appData?.settings?.enableUserProfile) {
+        showToast('⚠️ ميزة الإعجاب غير مفعلة حالياً', 'error');
+        return;
+    }
     if (!currentUser) { showLoginDialog(); return; }
     const index = currentUser.likes.indexOf(productId);
     if (index === -1) {
@@ -710,11 +800,15 @@ window.toggleLike = async function(productId, storeId, btn) {
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     const userIndex = users.findIndex(u => u.username === currentUser.username);
     if (userIndex !== -1) users[userIndex] = currentUser;
-    localStorage.setItem('users', JSON.stringify(users));
+    saveUsers();
     await supabaseClient.from('users').update({ likes: currentUser.likes }).eq('username', currentUser.username);
 };
 
 window.toggleFavorite = async function(productId, storeId, btn) {
+    if (!window.appData?.settings?.enableUserProfile) {
+        showToast('⚠️ ميزة المفضلة غير مفعلة حالياً', 'error');
+        return;
+    }
     if (!currentUser) { showLoginDialog(); return; }
     const index = currentUser.favorites.indexOf(productId);
     if (index === -1) {
@@ -729,7 +823,7 @@ window.toggleFavorite = async function(productId, storeId, btn) {
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     const userIndex = users.findIndex(u => u.username === currentUser.username);
     if (userIndex !== -1) users[userIndex] = currentUser;
-    localStorage.setItem('users', JSON.stringify(users));
+    saveUsers();
     await supabaseClient.from('users').update({ favorites: currentUser.favorites }).eq('username', currentUser.username);
 };
 
@@ -759,7 +853,7 @@ function updateCartDisplay(appData) {
             <div class="cart-item">
                 <img src="${item.image}" alt="${item.name}">
                 <div class="cart-item-details">
-                    <div class="cart-item-name">${item.name}</div>
+                    <div class="cart-item-name">${sanitizeText(item.name)}</div>
                     <div class="cart-item-price">${item.newPrice} ${getCurrencySymbol()}</div>
                 </div>
                 <span class="cart-item-remove" onclick="removeFromCart(${idx})">
@@ -801,10 +895,14 @@ function removeFromCart(index) {
 }
 
 window.addToCart = function(product, appData) {
+    if (!appData?.settings?.cartEnabled) {
+        showToast('⚠️ سلة التسوق غير مفعلة', 'error');
+        return;
+    }
     cart.push(product);
     localStorage.setItem('cart', JSON.stringify(cart));
     updateCartDisplay(appData);
-    showToast('تم إضافة المنتج للسلة');
+    showToast('✅ تم إضافة المنتج للسلة', 'success');
 };
 
 // ================== دوال التصميم ==================
@@ -828,46 +926,9 @@ function applyDesignSettings() {
     document.body.style.fontSize = d.generalFontSize || '1rem';
 }
 
-let headerInterval, currentHeaderIndex = 0;
-function changeHeaderBackground() {
-    const header = document.getElementById('mainHeader');
-    if (window.appData && window.appData.header.images && window.appData.header.images.length > 0) {
-        const images = window.appData.header.images;
-        header.style.backgroundImage = `url('${images[currentHeaderIndex]}')`;
-        currentHeaderIndex = (currentHeaderIndex + 1) % images.length;
-    }
-}
-function startHeaderInterval() {
-    if (headerInterval) clearInterval(headerInterval);
-    changeHeaderBackground();
-    headerInterval = setInterval(changeHeaderBackground, 5000);
-}
-
-function startCarousel() {
-    // ستُستخدم من index.html
-}
-
-// ================== PWA ==================
+// ================== PWA والتثبيت ==================
 let deferredPrompt;
 let installToastTimeout;
-
-(function addInstallAnimation() {
-    if (!document.getElementById('install-anim-style')) {
-        const style = document.createElement('style');
-        style.id = 'install-anim-style';
-        style.textContent = `
-            @keyframes slideDown {
-                from { transform: translate(-50%, -100px); opacity: 0; }
-                to { transform: translate(-50%, 0); opacity: 1; }
-            }
-            @keyframes fadeOut {
-                from { opacity: 1; }
-                to { opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-})();
 
 function showInstallToast() {
     const existing = document.getElementById('installToast');
@@ -951,6 +1012,15 @@ window.addEventListener('offline', () => {
     showToast("⚠️ أنت غير متصل، سيتم حفظ البيانات محلياً", 'error');
 });
 
+// ================== تسجيل Service Worker ==================
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/service-worker.js')
+            .then(reg => console.log('✅ SW مسجل'))
+            .catch(err => console.warn('⚠️ فشل تسجيل SW', err));
+    });
+}
+
 // ================== تصدير الكائنات العامة ==================
 window.common = {
     supabaseClient,
@@ -958,9 +1028,12 @@ window.common = {
     saveToIndexedDB,
     loadFromIndexedDB,
     deleteFromIndexedDB,
+    createBackup,
+    restoreBackup,
     uploadImage,
     deleteImage,
     uploadAndReplaceImage,
+    compressImage,
     appData: window.appData,
     isOnline,
     loadAppData,
@@ -980,8 +1053,6 @@ window.common = {
     getCurrencySymbol,
     translate,
     applyDesignSettings,
-    startHeaderInterval,
-    startCarousel,
     showLoginDialog,
     toggleLike: window.toggleLike,
     toggleFavorite: window.toggleFavorite,
@@ -994,7 +1065,11 @@ window.common = {
     DEFAULT_WHATSAPP_NUMBER,
     ensureSocialMedia,
     STORAGE_BUCKET,
-    createDefaultData
+    // دوال التشفير
+    hashPassword,
+    verifyPassword,
+    ADMIN_PASSWORD_HASH,
+    initializeSecurity
 };
 
 // دوال عالمية للمكالمات المباشرة
@@ -1005,8 +1080,6 @@ window.uploadAndReplaceImage = uploadAndReplaceImage;
 window.loadAppData = loadAppData;
 window.saveAppData = saveAppData;
 window.applyDesignSettings = applyDesignSettings;
-window.startHeaderInterval = startHeaderInterval;
-window.startCarousel = startCarousel;
 window.getCurrencySymbol = getCurrencySymbol;
 window.translate = translate;
 window.logAdminError = logAdminError;
@@ -1016,14 +1089,12 @@ window.updateElementImage = updateElementImage;
 window.updateCartDisplay = updateCartDisplay;
 window.removeFromCart = removeFromCart;
 window.ensureSocialMedia = ensureSocialMedia;
-window.createDefaultData = createDefaultData;
-window.fetchFromSupabase = fetchFromSupabase;
+window.createBackup = createBackup;
+window.restoreBackup = restoreBackup;
+window.hashPassword = hashPassword;
+window.verifyPassword = verifyPassword;
+window.ADMIN_PASSWORD_HASH = ADMIN_PASSWORD_HASH;
+window.initializeSecurity = initializeSecurity;
 
-// تسجيل Service Worker
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js')
-            .then(reg => console.log('SW مسجل'))
-            .catch(err => console.warn('فشل تسجيل SW', err));
-    });
-}
+console.log('✅ common.js تم تحميله بنجاح (النسخة النهائية الآمنة مع حساب تلقائي لكلمة المرور)');
+console.log('🛡️ هذا الموقع مطور بواسطة المهندس رمزي الصلاحي - جميع الحقوق محفوظة لمجمع أسواق ريادة المستهلك © 2026');
