@@ -1,15 +1,21 @@
-// service-worker.js - نسخة محسّنة مع دعم التثبيت الفوري
-const CACHE_NAME = 'markets-v3'; // غيّر الإصدار لتحديث الكاش
+// service-worker.js - النسخة النهائية المستقرة
+// تدعم التثبيت الفوري، التحديث التلقائي، والتخزين المؤقت للعناصر الأساسية
+
+const CACHE_NAME = 'markets-v4'; // تم تحديث الإصدار
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/admin.html',
   '/common.js',
+  '/common.css',
   '/manifest.json',
+  '/redirect.html',
+  '/robots.txt',
+  '/sitemap.xml',
   'https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0' // ✅ تم تثبيت الإصدار
 ];
 
 // ============= حدث التثبيت =============
@@ -24,6 +30,9 @@ self.addEventListener('install', event => {
       .then(() => {
         console.log('[SW] التثبيت اكتمل، يتم التفعيل الفوري');
         return self.skipWaiting(); // تفعيل SW فوراً
+      })
+      .catch(err => {
+        console.error('[SW] فشل التثبيت:', err);
       })
   );
 });
@@ -49,35 +58,68 @@ self.addEventListener('activate', event => {
 
 // ============= استراتيجية الجلب: Cache First مع تحديث خفي =============
 self.addEventListener('fetch', event => {
-  // تجاهل طلبات Supabase API
-  if (event.request.url.includes('supabase.co')) {
+  const url = new URL(event.request.url);
+
+  // تجاهل طلبات Supabase API (لا نخزنها في الكاش)
+  if (url.hostname.includes('supabase.co')) {
+    return;
+  }
+
+  // تجاهل طلبات التحليلات والإحصائيات
+  if (url.hostname.includes('google-analytics.com') || 
+      url.hostname.includes('googletagmanager.com') ||
+      url.hostname.includes('plausible.io')) {
     return;
   }
 
   event.respondWith(
     caches.match(event.request).then(cachedResponse => {
-      const fetchPromise = fetch(event.request).then(networkResponse => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
-      }).catch(error => {
-        console.warn('[SW] فشل الجلب من الشبكة، نعيد المخبأ إن وُجد');
-        return cachedResponse;
-      });
+      // إذا وُجد في الكاش، نعيده فوراً ثم نحدثه في الخلفية
+      const fetchPromise = fetch(event.request)
+        .then(networkResponse => {
+          // نخزن النسخة الجديدة فقط إذا كانت الاستجابة سليمة
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(event.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(error => {
+          console.warn('[SW] فشل الجلب من الشبكة:', url.pathname);
+          // إذا كان هناك استجابة مخبأة، نعيدها حتى لو كانت قديمة
+          return cachedResponse;
+        });
 
+      // نعيد المخبأ إن وُجد، وإلا ننتظر الشبكة
       return cachedResponse || fetchPromise;
     })
   );
 });
 
-// ============= إشعار نجاح التثبيت (للمطور) =============
+// ============= الاستماع لرسائل من الصفحة =============
 self.addEventListener('message', event => {
   if (event.data === 'check-install') {
     // الرد بأن SW يعمل
-    event.ports[0].postMessage({ installed: true, version: CACHE_NAME });
+    if (event.ports && event.ports.length > 0) {
+      event.ports[0].postMessage({ 
+        installed: true, 
+        version: CACHE_NAME,
+        cacheSize: STATIC_ASSETS.length
+      });
+    }
+  }
+
+  // تحديث الكاش عند طلب من الصفحة
+  if (event.data === 'refresh-cache') {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then(cache => {
+        return cache.addAll(STATIC_ASSETS);
+      })
+    );
   }
 });
+
+// ============= إشعار للمطور في وحدة التحكم =============
+console.log('[SW] Service Worker جاهز ويعمل بكفاءة ✅');
