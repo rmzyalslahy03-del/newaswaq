@@ -45,56 +45,111 @@
         p {
             color: #e2e8f0;
             font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+        .url-display {
+            background: rgba(255,255,255,0.1);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            color: #94a3b8;
+            word-break: break-all;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+        .retry-btn {
+            background: #fbbf24;
+            color: #0f172a;
+            border: none;
+            padding: 8px 20px;
+            border-radius: 40px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            font-family: 'Cairo', sans-serif;
+            transition: 0.2s;
+        }
+        .retry-btn:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
         }
     </style>
     <script>
         (function() {
-            // استخراج المعامل `to` من الرابط
+            // استخراج المعاملات من الرابط
             const params = new URLSearchParams(window.location.search);
             let target = params.get('to') || '';
-
-            // إذا لم يوجد معامل، نذهب للرئيسية مباشرة
-            if (!target) {
-                window.location.replace('/index.html');
-                return;
-            }
-
-            // إزالة أي علامات # زائدة قد تكون أضيفت خطأ
-            target = target.replace(/^#/, '');
-
-            // الاحتفاظ بمعاملات إضافية للتتبع (مثل utm_source)
             const utmParams = [];
-            const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'];
+            const allowedUtm = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id'];
+
+            // جمع معاملات UTM
             allowedUtm.forEach(function(key) {
-                if (params.has(key)) {
-                    utmParams.push(key + '=' + encodeURIComponent(params.get(key)));
+                if (params.has(key) && params.get(key).trim() !== '') {
+                    utmParams.push(key + '=' + encodeURIComponent(params.get(key).trim()));
                 }
             });
 
-            // بناء الرابط النهائي
-            let finalUrl = '/index.html';
-            if (target) {
-                finalUrl += '#' + target;
-            }
-            if (utmParams.length > 0) {
-                // إذا كانت هناك معاملات UTM، نضيفها كـ query string بعد التجزئة؟ الأفضل وضعها قبل #
-                // لكن بما أن الصفحة SPA وتستخدم hash، نضع المعاملات في الرابط الرئيسي
-                finalUrl = '/index.html?' + utmParams.join('&');
-                if (target) {
-                    finalUrl += '#' + target;
+            // تجميع أي معاملات إضافية غير معروفة (مثل ref, source, etc)
+            params.forEach(function(value, key) {
+                if (!allowedUtm.includes(key) && key !== 'to' && value.trim() !== '') {
+                    utmParams.push(key + '=' + encodeURIComponent(value.trim()));
                 }
+            });
+
+            // تنظيف الـ target من أي # زائدة
+            target = target.replace(/^#/, '').trim();
+
+            // بناء الرابط النهائي
+            let baseUrl = '/index.html';
+            let queryString = utmParams.length > 0 ? '?' + utmParams.join('&') : '';
+            let hashString = target ? '#' + target : '';
+
+            // إذا كان الـ target يبدأ بـ / (رابط كامل) نحتفظ به كما هو
+            let finalUrl;
+            if (target.startsWith('http://') || target.startsWith('https://')) {
+                // رابط خارجي (نادر لكن للاحتياط)
+                finalUrl = target;
+            } else {
+                finalUrl = baseUrl + queryString + hashString;
             }
 
-            // إعادة التوجيه الفوري (مع استبدال التاريخ)
-            window.location.replace(finalUrl);
+            // عرض الرابط في الصفحة (للتأكد)
+            document.addEventListener('DOMContentLoaded', function() {
+                const urlDisplay = document.getElementById('urlDisplay');
+                if (urlDisplay) {
+                    urlDisplay.textContent = 'جاري التوجيه إلى: ' + finalUrl;
+                }
+            });
+
+            // الانتظار 1.5 ثانية ثم التوجيه (لتظهر صفحة التحميل)
+            setTimeout(function() {
+                window.location.replace(finalUrl);
+            }, 1500);
+
+            // زر إعادة المحاولة (في حال علق)
+            window.retryRedirect = function() {
+                window.location.replace(finalUrl);
+            };
+
+            // دالة احتياطية: إذا لم يحدث التوجيه بعد 5 ثوانٍ، نعيد المحاولة تلقائياً
+            setTimeout(function() {
+                // إذا كنا لا نزال في هذه الصفحة بعد 5 ثوانٍ، نعيد التوجيه
+                if (window.location.href.includes('redirect.html')) {
+                    window.location.replace(finalUrl);
+                }
+            }, 5000);
+
+            console.log('[Redirect] التوجيه إلى:', finalUrl);
         })();
     </script>
 </head>
 <body>
     <div class="loader-box">
         <div class="spinner"></div>
-        <h2>جاري تحويلك إلى المتجر...</h2>
+        <h2>🔄 جاري تحويلك إلى المتجر...</h2>
         <p>يرجى الانتظار لحظة</p>
+        <div class="url-display" id="urlDisplay">جاري التوجيه...</div>
+        <button class="retry-btn" onclick="window.retryRedirect()">🔄 إعادة المحاولة</button>
     </div>
 </body>
 </html>
