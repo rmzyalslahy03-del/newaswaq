@@ -474,38 +474,29 @@
 
     <script>
         // ============================================================
-        // دالة مساعدة لإعادة تعيين الحقول في أي حاوية (div)
+        // دوال مساعدة عامة
         // ============================================================
         function resetFormFields(containerId) {
             const container = document.getElementById(containerId);
             if (!container) return;
-            
             const inputs = container.querySelectorAll('input:not([type="hidden"]), textarea, select');
             inputs.forEach(input => {
-                if (input.type === 'checkbox' || input.type === 'radio') {
-                    input.checked = false;
-                } else if (input.tagName === 'SELECT') {
-                    input.selectedIndex = 0;
-                } else {
-                    input.value = '';
-                }
+                if (input.type === 'checkbox' || input.type === 'radio') input.checked = false;
+                else if (input.tagName === 'SELECT') input.selectedIndex = 0;
+                else input.value = '';
             });
-            
             const addBtn = container.querySelector('[id$="addCategoryBtn"], [id$="addStoreBtn"], [id$="addProductBtn"], [id$="addCarouselBtn"], [id$="addTestimonialBtn"], [id$="addBannerBtn"], [id$="addContestBtn"]');
             const updateBtn = container.querySelector('[id$="updateCategoryBtn"], [id$="updateStoreBtn"], [id$="updateProductBtn"], [id$="updateCarouselBtn"], [id$="updateTestimonialBtn"], [id$="updateBannerBtn"], [id$="updateContestBtn"]');
             if (addBtn) addBtn.style.display = 'block';
             if (updateBtn) updateBtn.style.display = 'none';
         }
 
-        // ============================================================
-        // توليد معرف فريد (string)
-        // ============================================================
         function generateId() {
             return 'id_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
         }
 
         // ============================================================
-        // الانتظار حتى تحميل الصفحة بالكامل و common.js
+        // التهيئة الرئيسية
         // ============================================================
         window.onload = function() {
             if (typeof common === 'undefined') {
@@ -526,8 +517,9 @@
             let currentEditBannerId = null;
             let changedTables = new Set();
             let isSaving = false;
+            let saveTimeoutId = null;
 
-            // ===== دوال عرض وإخفاء الرسائل =====
+            // ===== دوال عرض الرسائل =====
             function showSpinner(show) {
                 const badge = document.getElementById('autoSaveBadge');
                 if (show) {
@@ -555,7 +547,7 @@
                 }
             }
 
-            // ===== حفظ البيانات إلى Supabase (نسخة محسّنة) =====
+            // ===== حفظ البيانات بشكل متوازي ومجمّع =====
             async function saveToSupabaseAdmin(tables = null) {
                 const tablesToSave = tables || Array.from(changedTables);
                 if (!appData || isSaving) return;
@@ -564,44 +556,47 @@
                 isSaving = true;
                 showSpinner(true);
 
-                const timeoutId = setTimeout(() => {
+                // إلغاء أي مهلة سابقة
+                if (saveTimeoutId) clearTimeout(saveTimeoutId);
+                saveTimeoutId = setTimeout(() => {
                     if (isSaving) {
                         showSpinner(false);
                         isSaving = false;
-                        showToast("⚠️ انتهت مهلة الحفظ، حاول مرة أخرى", 'error', true);
+                        showToast("⚠️ انتهت مهلة الحفظ، جارٍ إعادة المحاولة...", 'error', true);
+                        saveToSupabaseAdmin(tablesToSave); // محاولة واحدة تلقائية
                     }
-                }, 30000);
+                }, 60000); // 60 ثانية مهلة
 
                 try {
-                    // حفظ محلياً أولاً
+                    // حفظ محلي أولاً
                     await common.saveToIndexedDB(appData);
 
-                    // المزامنة مع Supabase
-                    if (common.isOnline) {
+                    if (common.isOnline && common.supabaseClient) {
                         const supabase = common.supabaseClient;
+                        const promises = [];
 
-                        // 1. settings
+                        // 1. الإعدادات
                         if (tablesToSave.includes('settings')) {
-                            await supabase.from('settings').upsert({
-                                id: 'main',
-                                data: {
-                                    header: appData.header || {},
-                                    ticker: appData.ticker || [],
-                                    design: appData.design || {},
-                                    footer: appData.footer || {},
-                                    settings: appData.settings || {}
-                                }
-                            });
+                            promises.push(
+                                supabase.from('settings').upsert({
+                                    id: 'main',
+                                    data: {
+                                        header: appData.header || {},
+                                        ticker: appData.ticker || [],
+                                        design: appData.design || {},
+                                        footer: appData.footer || {},
+                                        settings: appData.settings || {}
+                                    }
+                                })
+                            );
                         }
 
-                        // 2. categories
-                        if (tablesToSave.includes('categories') && appData.categories) {
-                            for (const cat of appData.categories) {
-                                await supabase.from('categories').upsert(cat);
-                            }
+                        // 2. الفئات
+                        if (tablesToSave.includes('categories') && appData.categories?.length > 0) {
+                            promises.push(supabase.from('categories').upsert(appData.categories));
                         }
 
-                        // 3. stores (flatten)
+                        // 3. المتاجر (دفعات)
                         if (tablesToSave.includes('stores')) {
                             const allStores = [];
                             for (const cat in appData.stores) {
@@ -610,12 +605,14 @@
                                     allStores.push(store);
                                 }
                             }
-                            for (const store of allStores) {
-                                await supabase.from('stores').upsert(store);
+                            const batchSize = 50;
+                            for (let i = 0; i < allStores.length; i += batchSize) {
+                                const batch = allStores.slice(i, i + batchSize);
+                                promises.push(supabase.from('stores').upsert(batch));
                             }
                         }
 
-                        // 4. products
+                        // 4. المنتجات (دفعات)
                         if (tablesToSave.includes('products')) {
                             const allProducts = [];
                             for (const storeId in appData.products) {
@@ -623,49 +620,48 @@
                                     allProducts.push({ ...prod, storeId });
                                 }
                             }
-                            for (const prod of allProducts) {
-                                await supabase.from('products').upsert(prod);
+                            const batchSize = 100;
+                            for (let i = 0; i < allProducts.length; i += batchSize) {
+                                const batch = allProducts.slice(i, i + batchSize);
+                                promises.push(supabase.from('products').upsert(batch));
                             }
                         }
 
-                        // 5. testimonials
-                        if (tablesToSave.includes('testimonials') && appData.testimonials) {
-                            for (const t of appData.testimonials) {
-                                await supabase.from('testimonials').upsert(t);
-                            }
+                        // 5. التقييمات
+                        if (tablesToSave.includes('testimonials') && appData.testimonials?.length > 0) {
+                            promises.push(supabase.from('testimonials').upsert(appData.testimonials));
                         }
 
-                        // 6. carousel
-                        if (tablesToSave.includes('carousel') && appData.carousel) {
-                            for (const ad of appData.carousel) {
-                                await supabase.from('carousel').upsert(ad);
-                            }
+                        // 6. الإعلانات الدوارة
+                        if (tablesToSave.includes('carousel') && appData.carousel?.length > 0) {
+                            promises.push(supabase.from('carousel').upsert(appData.carousel));
                         }
 
-                        // 7. messages
-                        if (tablesToSave.includes('messages') && appData.messages) {
-                            for (const msg of appData.messages) {
-                                await supabase.from('messages').upsert(msg);
-                            }
+                        // 7. الرسائل
+                        if (tablesToSave.includes('messages') && appData.messages?.length > 0) {
+                            promises.push(supabase.from('messages').upsert(appData.messages));
+                        }
+
+                        if (promises.length > 0) {
+                            await Promise.all(promises);
                         }
                     }
 
-                    // مسح التغييرات المحفوظة
                     tablesToSave.forEach(table => changedTables.delete(table));
                     showToast("✅ تم حفظ التغييرات ومزامنتها", 'success', true);
-
                 } catch (err) {
                     console.error("خطأ في الحفظ:", err);
                     showToast("❌ خطأ في الحفظ: " + err.message, 'error', true);
                     common.logAdminError(err, 'saveToSupabaseAdmin');
                 } finally {
-                    clearTimeout(timeoutId);
+                    if (saveTimeoutId) clearTimeout(saveTimeoutId);
+                    saveTimeoutId = null;
                     showSpinner(false);
                     isSaving = false;
                 }
             }
 
-            // ===== دوال مساعدة =====
+            // ===== دوال مساعدة للبحث والعرض =====
             function findStoreById(storeId) {
                 if (!appData) return null;
                 for (let cat in appData.stores) {
@@ -675,34 +671,21 @@
                 return null;
             }
 
-            // ===== دالة ضغط الصور =====
             function compressImage(file, maxWidth = 800, maxHeight = 800, quality = 0.7) {
                 return new Promise((resolve) => {
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const img = new Image();
                         img.onload = () => {
-                            let width = img.width;
-                            let height = img.height;
-                            if (width > maxWidth) {
-                                height = height * (maxWidth / width);
-                                width = maxWidth;
-                            }
-                            if (height > maxHeight) {
-                                width = width * (maxHeight / height);
-                                height = maxHeight;
-                            }
+                            let width = img.width, height = img.height;
+                            if (width > maxWidth) { height = height * (maxWidth / width); width = maxWidth; }
+                            if (height > maxHeight) { width = width * (maxHeight / height); height = maxHeight; }
                             const canvas = document.createElement('canvas');
-                            canvas.width = width;
-                            canvas.height = height;
+                            canvas.width = width; canvas.height = height;
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0, width, height);
                             canvas.toBlob((blob) => {
-                                const compressedFile = new File([blob], file.name, {
-                                    type: 'image/jpeg',
-                                    lastModified: Date.now()
-                                });
-                                resolve(compressedFile);
+                                resolve(new File([blob], file.name, { type: 'image/jpeg', lastModified: Date.now() }));
                             }, 'image/jpeg', quality);
                         };
                         img.src = e.target.result;
@@ -711,48 +694,30 @@
                 });
             }
 
-            // ===== إعداد رفع الصور =====
             function setupImageUpload(fileInputId, targetInputId, folder, getOldUrl = null) {
                 document.getElementById(fileInputId).addEventListener('change', async (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
-
                     if (file.size > 10 * 1024 * 1024) {
                         showToast('⚠️ حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)', 'error', true);
-                        e.target.value = '';
-                        return;
+                        e.target.value = ''; return;
                     }
-
                     try {
                         showSpinner(true);
                         showToast('⏳ جاري ضغط الصورة ورفعها...', 'success', true);
-
                         const compressedFile = await compressImage(file, 800, 800, 0.7);
-
-                        let oldUrl = null;
-                        if (getOldUrl) {
-                            oldUrl = getOldUrl();
-                        } else {
-                            oldUrl = document.getElementById(targetInputId)?.value || null;
-                        }
-
+                        let oldUrl = getOldUrl ? getOldUrl() : (document.getElementById(targetInputId)?.value || null);
                         const newUrl = await common.uploadAndReplaceImage(compressedFile, oldUrl, folder);
                         document.getElementById(targetInputId).value = newUrl;
-
                         changedTables.add('settings');
                         await saveToSupabaseAdmin(['settings']);
-
                         showToast('✅ تم رفع الصورة وحفظها بنجاح', 'success', true);
                     } catch (err) {
                         console.error('خطأ في رفع الصورة:', err);
                         let errorMsg = err.message || 'فشل رفع الصورة';
-                        if (err.status === 404) {
-                            errorMsg = '⚠️ حاوية التخزين غير موجودة. تأكد من إنشاء bucket باسم "images" في Supabase.';
-                        } else if (err.status === 400) {
-                            errorMsg = '⚠️ خطأ في الطلب. تأكد من إعدادات CORS وصلاحيات الرفع في Supabase.';
-                        } else if (err.message?.includes('timeout')) {
-                            errorMsg = '⚠️ انتهت مهلة رفع الصورة. حاول مرة أخرى أو استخدم صورة أصغر.';
-                        }
+                        if (err.status === 404) errorMsg = '⚠️ حاوية التخزين غير موجودة. تأكد من إنشاء bucket باسم "images" في Supabase.';
+                        else if (err.status === 400) errorMsg = '⚠️ خطأ في الطلب. تأكد من إعدادات CORS وصلاحيات الرفع في Supabase.';
+                        else if (err.message?.includes('timeout')) errorMsg = '⚠️ انتهت مهلة رفع الصورة. حاول مرة أخرى أو استخدم صورة أصغر.';
                         showToast('❌ ' + errorMsg, 'error', true);
                         common.logAdminError(err, 'uploadImage');
                     } finally {
@@ -781,8 +746,7 @@
                     }
                 }
 
-                const currentUrl = appData?.settings?.saudiFlagUrl || '';
-                updateFlagPreview(currentUrl);
+                if (appData?.settings?.saudiFlagUrl) updateFlagPreview(appData.settings.saudiFlagUrl);
 
                 dropZone.addEventListener('click', () => fileInput.click());
                 dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.borderColor = '#10b981'; });
@@ -790,24 +754,19 @@
                 dropZone.addEventListener('drop', async (e) => {
                     e.preventDefault();
                     dropZone.style.borderColor = '#fbbf24';
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0) await handleSaudiFlagFile(files[0]);
+                    if (e.dataTransfer.files.length > 0) await handleSaudiFlagFile(e.dataTransfer.files[0]);
                 });
-
                 fileInput.addEventListener('change', async (e) => {
                     if (e.target.files.length > 0) await handleSaudiFlagFile(e.target.files[0]);
                 });
 
                 async function handleSaudiFlagFile(file) {
-                    if (!file) return;
-                    if (file.size > 10 * 1024 * 1024) {
-                        showToast('⚠️ حجم الصورة كبير جداً (الحد الأقصى 10 ميجابايت)', 'error', true);
-                        fileInput.value = '';
+                    if (!file || file.size > 10 * 1024 * 1024) {
+                        showToast('⚠️ حجم الصورة كبير جداً', 'error', true);
                         return;
                     }
                     try {
                         showSpinner(true);
-                        showToast('⏳ جاري ضغط العلم ورفعه...', 'success', true);
                         const compressedFile = await compressImage(file, 800, 800, 0.7);
                         const oldUrl = appData?.settings?.saudiFlagUrl || null;
                         const newUrl = await common.uploadAndReplaceImage(compressedFile, oldUrl, 'flags');
@@ -844,7 +803,7 @@
                 });
             }
 
-            // ===== توليد حقول وسائل التواصل =====
+            // ===== حقول التواصل الاجتماعي =====
             function renderSocialFields() {
                 const container = document.getElementById('socialFieldsContainer');
                 if (!container) return;
@@ -858,51 +817,31 @@
                     { id: 'linkedin', label: 'لينكدإن', icon: 'fab fa-linkedin-in' },
                     { id: 'tiktok', label: 'تيك توك', icon: 'fab fa-tiktok' }
                 ];
-                let html = '';
-                platforms.forEach(p => {
-                    const urlId = `social_${p.id}_url`;
-                    const activeId = `social_${p.id}_active`;
-                    html += `
-                        <div class="social-field-group">
-                            <i class="${p.icon}"></i>
-                            <label>${p.label}</label>
-                            <input type="text" id="${urlId}" placeholder="رابط ${p.label}" value="">
-                            <label>
-                                <input type="checkbox" id="${activeId}" checked> عرض
-                            </label>
-                        </div>
-                    `;
-                });
-                container.innerHTML = html;
+                container.innerHTML = platforms.map(p => `
+                    <div class="social-field-group">
+                        <i class="${p.icon}"></i>
+                        <label>${p.label}</label>
+                        <input type="text" id="social_${p.id}_url" placeholder="رابط ${p.label}">
+                        <label><input type="checkbox" id="social_${p.id}_active" checked> عرض</label>
+                    </div>
+                `).join('');
             }
 
-            // ===== دوال ملء الحقول =====
+            // ===== دوال ملء النماذج =====
             function populateGeneralSettings() {
                 if (!appData) return;
                 document.getElementById('currencySelect').value = appData.settings.currency || 'SAR';
                 document.getElementById('languageSelect').value = appData.settings.language || 'ar';
-                document.getElementById('showSaudiFlagCheckbox').checked = appData.settings.showSaudiFlag !== undefined ? appData.settings.showSaudiFlag : true;
-                document.getElementById('cartEnabledCheckbox').checked = appData.settings.cartEnabled !== undefined ? appData.settings.cartEnabled : true;
-                document.getElementById('enableUserProfileCheckbox').checked = appData.settings.enableUserProfile !== undefined ? appData.settings.enableUserProfile : true;
-                document.getElementById('orderWhatsappCheckbox').checked = appData.settings.orderMethods?.whatsapp !== undefined ? appData.settings.orderMethods.whatsapp : true;
-                document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods?.email !== undefined ? appData.settings.orderMethods.email : true;
-                document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods?.chat !== undefined ? appData.settings.orderMethods.chat : true;
+                document.getElementById('showSaudiFlagCheckbox').checked = appData.settings.showSaudiFlag !== false;
+                document.getElementById('cartEnabledCheckbox').checked = appData.settings.cartEnabled !== false;
+                document.getElementById('enableUserProfileCheckbox').checked = appData.settings.enableUserProfile !== false;
+                document.getElementById('orderWhatsappCheckbox').checked = appData.settings.orderMethods?.whatsapp !== false;
+                document.getElementById('orderEmailCheckbox').checked = appData.settings.orderMethods?.email !== false;
+                document.getElementById('orderChatCheckbox').checked = appData.settings.orderMethods?.chat !== false;
                 document.getElementById('contactEmail').value = appData.settings.contactEmail || '';
                 document.getElementById('whatsappNumber').value = appData.settings.whatsappNumber || '967778562099';
                 document.getElementById('trustBadgesInput').value = (appData.settings.trustBadges || []).join('\n');
                 document.getElementById('trackingCode').value = appData.settings.trackingCode || '';
-
-                const flagImage = document.getElementById('saudiFlagImage');
-                const placeholder = document.getElementById('saudiFlagPlaceholder');
-                const url = appData.settings?.saudiFlagUrl || '';
-                if (url) {
-                    flagImage.src = url;
-                    flagImage.style.display = 'block';
-                    placeholder.style.display = 'none';
-                } else {
-                    flagImage.style.display = 'none';
-                    placeholder.style.display = 'block';
-                }
             }
 
             function populateFooterSettings() {
@@ -911,10 +850,8 @@
                 document.getElementById('footerPhone').value = appData.footer.phone || '';
                 document.getElementById('footerWhatsapp').value = appData.footer.whatsapp || '';
                 document.getElementById('footerPayments').value = (appData.footer.payments || []).join(', ');
-
                 const socialMedia = appData.footer.socialMedia || [];
-                const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
-                platforms.forEach(p => {
+                ['whatsapp','facebook','twitter','instagram','telegram','snapchat','linkedin','tiktok'].forEach(p => {
                     const item = socialMedia.find(s => s.platform === p);
                     const urlEl = document.getElementById(`social_${p}_url`);
                     const activeEl = document.getElementById(`social_${p}_active`);
@@ -924,9 +861,8 @@
             }
 
             function populateDesignSettings() {
-                if (!appData) return;
-                if (!appData.design) appData.design = {};
-                document.getElementById('categoryBg').value = appData.design.categoryBg || 'linear-gradient(145deg, #f9eef7, #f3d9e8)';
+                if (!appData || !appData.design) return;
+                document.getElementById('categoryBg').value = appData.design.categoryBg || '';
                 document.getElementById('categoryText').value = appData.design.categoryText || '#9b4d96';
                 document.getElementById('categoryFontSize').value = appData.design.categoryFontSize || '2rem';
                 document.getElementById('storeBg').value = appData.design.storeBg || '#ffffff';
@@ -935,17 +871,16 @@
                 document.getElementById('productBg').value = appData.design.productBg || '#ffffff';
                 document.getElementById('productText').value = appData.design.productText || '#1e293b';
                 document.getElementById('productFontSize').value = appData.design.productFontSize || '0.85rem';
-                document.getElementById('adBg').value = appData.design.adBg || 'linear-gradient(90deg, #fbbf24, #f59e0b)';
+                document.getElementById('adBg').value = appData.design.adBg || '';
                 document.getElementById('adText').value = appData.design.adText || '#0f172a';
                 document.getElementById('adFontSize').value = appData.design.adFontSize || '1.1rem';
                 document.getElementById('generalFontSize').value = appData.design.generalFontSize || '1rem';
             }
 
             function populateHeaderSettings() {
-                if (!appData) return;
-                if (!appData.header) appData.header = {};
-                document.getElementById('headerTitleInput').value = appData.header.title || 'مجمع أسواق ريادة المستهلك';
-                document.getElementById('headerSubtitleInput').value = appData.header.subtitle || 'أفضل المتاجر والمنتجات بأفضل الأسعار';
+                if (!appData || !appData.header) return;
+                document.getElementById('headerTitleInput').value = appData.header.title || '';
+                document.getElementById('headerSubtitleInput').value = appData.header.subtitle || '';
                 document.getElementById('headerImagesInput').value = (appData.header.images || []).join('\n');
             }
 
@@ -954,11 +889,11 @@
                 document.getElementById('tickerTextsInput').value = (appData.ticker || []).join('\n');
             }
 
-            // ===== دوال عرض القوائم =====
             function refreshAllLists() {
                 if (!appData) return;
                 populateCategoriesList();
-                if (document.getElementById('storeCategorySelect').value) populateStoresList(document.getElementById('storeCategorySelect').value);
+                if (document.getElementById('storeCategorySelect').value !== 'اختر الفئة')
+                    populateStoresList(document.getElementById('storeCategorySelect').value);
                 populateProductsList();
                 populateCarouselList();
                 populateTestimonialsList();
@@ -983,9 +918,9 @@
                     const select = document.getElementById(selId);
                     if (!select) return;
                     select.innerHTML = '<option>اختر الفئة</option>';
-                    if (appData && appData.categories) {
+                    if (appData?.categories) {
                         appData.categories.forEach(cat => {
-                            select.innerHTML += `<option value="${common.sanitizeText(cat.name)}">${common.sanitizeText(cat.name)}</option>`;
+                            select.innerHTML += `<option value="${cat.name}">${cat.name}</option>`;
                         });
                     }
                 });
@@ -993,118 +928,119 @@
 
             function populateCategoriesList() {
                 const container = document.getElementById('categoriesList');
-                if (!container) return;
-                container.innerHTML = '';
-                if (appData && appData.categories) {
-                    appData.categories.forEach(cat => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<span>${common.sanitizeText(cat.name)}</span><div><button class="edit" onclick="editCategory('${cat.id}')">تعديل</button><button onclick="deleteCategory('${cat.id}')">حذف</button></div>`;
-                        container.appendChild(div);
-                    });
-                }
+                if (!container || !appData?.categories) return;
+                container.innerHTML = appData.categories.map(cat => `
+                    <div class="admin-item">
+                        <span>${cat.name}</span>
+                        <div>
+                            <button class="edit" onclick="editCategory('${cat.id}')">تعديل</button>
+                            <button onclick="deleteCategory('${cat.id}')">حذف</button>
+                        </div>
+                    </div>
+                `).join('');
             }
 
             function populateStoresList(category) {
                 const container = document.getElementById('storesList');
-                if (!container) return;
-                if (!category || category === 'اختر الفئة' || !appData) return;
-                container.innerHTML = '';
+                if (!container || !category || category === 'اختر الفئة' || !appData) return;
                 const stores = appData.stores[category] || [];
-                stores.forEach(store => {
-                    const div = document.createElement('div');
-                    div.className = `admin-item ${store.hidden ? 'hidden-store' : ''}`;
-                    div.innerHTML = `<span>${common.sanitizeText(store.name)}</span><div><button class="edit" onclick="editStore('${store.id}')">تعديل</button><button class="toggle-hidden" onclick="toggleStoreHidden('${store.id}')">${store.hidden ? 'إظهار' : 'إخفاء'}</button><button onclick="deleteStore('${store.id}')">حذف</button></div>`;
-                    container.appendChild(div);
-                });
+                container.innerHTML = stores.map(store => `
+                    <div class="admin-item ${store.hidden ? 'hidden-store' : ''}">
+                        <span>${store.name}</span>
+                        <div>
+                            <button class="edit" onclick="editStore('${store.id}')">تعديل</button>
+                            <button class="toggle-hidden" onclick="toggleStoreHidden('${store.id}')">${store.hidden ? 'إظهار' : 'إخفاء'}</button>
+                            <button onclick="deleteStore('${store.id}')">حذف</button>
+                        </div>
+                    </div>
+                `).join('');
             }
 
             function populateProductsList() {
                 const container = document.getElementById('productsList');
-                if (!container) return;
+                if (!container || !appData) return;
                 container.innerHTML = '';
-                if (!appData) return;
                 for (let storeId in appData.products) {
                     const store = findStoreById(storeId);
                     if (!store) continue;
-                    const products = appData.products[storeId];
-                    products.forEach(prod => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<span>${common.sanitizeText(prod.name)} (${common.sanitizeText(store.name)})</span><div><button class="edit" onclick="editProduct('${storeId}', '${prod.id}')">تعديل</button><button onclick="deleteProduct('${storeId}', '${prod.id}')">حذف</button></div>`;
-                        container.appendChild(div);
+                    appData.products[storeId].forEach(prod => {
+                        container.innerHTML += `
+                            <div class="admin-item">
+                                <span>${prod.name} (${store.name})</span>
+                                <div>
+                                    <button class="edit" onclick="editProduct('${storeId}', '${prod.id}')">تعديل</button>
+                                    <button onclick="deleteProduct('${storeId}', '${prod.id}')">حذف</button>
+                                </div>
+                            </div>
+                        `;
                     });
                 }
             }
 
             function populateCarouselList() {
                 const container = document.getElementById('carouselList');
-                if (!container) return;
-                container.innerHTML = '';
-                if (appData && appData.carousel) {
-                    appData.carousel.forEach(ad => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<span>${common.sanitizeText(ad.name)}</span><div><button class="edit" onclick="editCarousel('${ad.id}')">تعديل</button><button onclick="deleteCarousel('${ad.id}')">حذف</button></div>`;
-                        container.appendChild(div);
-                    });
-                }
+                if (!container || !appData?.carousel) return;
+                container.innerHTML = appData.carousel.map(ad => `
+                    <div class="admin-item">
+                        <span>${ad.name}</span>
+                        <div>
+                            <button class="edit" onclick="editCarousel('${ad.id}')">تعديل</button>
+                            <button onclick="deleteCarousel('${ad.id}')">حذف</button>
+                        </div>
+                    </div>
+                `).join('');
             }
 
             function populateTestimonialsList() {
                 const container = document.getElementById('testimonialsList');
-                if (!container) return;
-                container.innerHTML = '';
-                if (appData && appData.testimonials) {
-                    appData.testimonials.forEach(t => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<span>${common.sanitizeText(t.name)}</span><div><button class="edit" onclick="editTestimonial('${t.id}')">تعديل</button><button onclick="deleteTestimonial('${t.id}')">حذف</button></div>`;
-                        container.appendChild(div);
-                    });
-                }
+                if (!container || !appData?.testimonials) return;
+                container.innerHTML = appData.testimonials.map(t => `
+                    <div class="admin-item">
+                        <span>${t.name}</span>
+                        <div>
+                            <button class="edit" onclick="editTestimonial('${t.id}')">تعديل</button>
+                            <button onclick="deleteTestimonial('${t.id}')">حذف</button>
+                        </div>
+                    </div>
+                `).join('');
             }
 
             function populateContestsList() {
                 const container = document.getElementById('contestsList');
-                if (!container) return;
-                container.innerHTML = '';
-                if (appData && appData.settings && appData.settings.contests) {
-                    appData.settings.contests.forEach((contest, idx) => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<span>${common.sanitizeText(contest.name)}</span><div><button class="edit" onclick="editContest(${idx})">تعديل</button><button onclick="deleteContest(${idx})">حذف</button></div>`;
-                        container.appendChild(div);
-                    });
-                }
+                if (!container || !appData?.settings?.contests) return;
+                container.innerHTML = appData.settings.contests.map((c, i) => `
+                    <div class="admin-item">
+                        <span>${c.name}</span>
+                        <div>
+                            <button class="edit" onclick="editContest(${i})">تعديل</button>
+                            <button onclick="deleteContest(${i})">حذف</button>
+                        </div>
+                    </div>
+                `).join('');
             }
 
             function populateTrustBadgesList() {
                 const container = document.getElementById('trustBadgesList');
-                if (!container) return;
-                container.innerHTML = '';
-                if (appData && appData.settings && appData.settings.trustBadges) {
-                    appData.settings.trustBadges.forEach((badge, idx) => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<span><img src="${badge}" style="height:30px;"></span><div><button onclick="deleteTrustBadge(${idx})">حذف</button></div>`;
-                        container.appendChild(div);
-                    });
-                }
+                if (!container || !appData?.settings?.trustBadges) return;
+                container.innerHTML = appData.settings.trustBadges.map((badge, i) => `
+                    <div class="admin-item">
+                        <span><img src="${badge}" style="height:30px;"></span>
+                        <button onclick="deleteTrustBadge(${i})">حذف</button>
+                    </div>
+                `).join('');
             }
 
             function populateMessagesList() {
                 const container = document.getElementById('messagesList');
-                if (!container) return;
-                container.innerHTML = '';
-                if (appData && appData.messages) {
-                    appData.messages.forEach((msg, idx) => {
-                        const div = document.createElement('div');
-                        div.className = 'admin-item';
-                        div.innerHTML = `<div><strong>${common.sanitizeText(msg.name)}</strong><br>${common.sanitizeText(msg.email)}<br>${common.sanitizeText(msg.subject)}<br>${common.sanitizeText(msg.message)}<br><small>${msg.date}</small></div><div><button onclick="deleteMessage(${idx})">حذف</button></div>`;
-                        container.appendChild(div);
-                    });
-                }
+                if (!container || !appData?.messages) return;
+                container.innerHTML = appData.messages.map((msg, i) => `
+                    <div class="admin-item">
+                        <div>
+                            <strong>${msg.name}</strong><br>${msg.email}<br>${msg.subject}<br>${msg.message}<br><small>${msg.date}</small>
+                        </div>
+                        <button onclick="deleteMessage(${i})">حذف</button>
+                    </div>
+                `).join('');
             }
 
             function renderAdminErrors() {
@@ -1115,20 +1051,21 @@
                     container.innerHTML = '<p>لا توجد أخطاء مسجلة.</p>';
                     return;
                 }
-                container.innerHTML = errors.map(err =>
-                    `<div class="admin-item" style="font-size:12px;">
+                container.innerHTML = errors.map(err => `
+                    <div class="admin-item" style="font-size:12px;">
                         <div><strong>${err.time}</strong> - ${err.context}</div>
                         <div>${err.message}</div>
-                    </div>`
-                ).join('');
+                    </div>
+                `).join('');
             }
 
             function populateStorePermissions() {
                 const catSelect = document.getElementById('storePermissionSelect');
                 const storeSelect = document.getElementById('storePermissionStoreSelect');
-                if (!catSelect || !storeSelect) return;
-                if (!catSelect.value || catSelect.value === 'اختر الفئة' || !appData) return;
-                const stores = appData.stores[catSelect.value] || [];
+                if (!catSelect || !storeSelect || !appData) return;
+                const cat = catSelect.value;
+                if (!cat || cat === 'اختر الفئة') return;
+                const stores = appData.stores[cat] || [];
                 storeSelect.innerHTML = '<option>اختر المتجر</option>';
                 stores.forEach(store => {
                     storeSelect.innerHTML += `<option value="${store.id}">${store.name}</option>`;
@@ -1141,22 +1078,19 @@
                 document.getElementById('policyTerms').value = policy.terms || '';
                 document.getElementById('policyReturns').value = policy.returns || '';
                 document.getElementById('policyUsage').value = policy.usage || '';
-
                 const about = appData.settings.aboutUs || {};
                 document.getElementById('aboutDescription').value = about.description || '';
                 document.getElementById('aboutMission').value = about.mission || '';
                 document.getElementById('aboutVision').value = about.vision || '';
             }
 
-            // ===== إعلانات المتاجر (Banners) =====
+            // ===== إعلانات المتاجر =====
             function populateBannerStoreSelect() {
                 const select = document.getElementById('bannerStoreSelect');
-                if (!select) return;
+                if (!select || !appData) return;
                 select.innerHTML = '<option>اختر المتجر</option>';
-                if (!appData) return;
                 for (const cat in appData.stores) {
-                    const stores = appData.stores[cat] || [];
-                    stores.forEach(store => {
+                    appData.stores[cat].forEach(store => {
                         select.innerHTML += `<option value="${store.id}">${store.name} (${store.category})</option>`;
                     });
                 }
@@ -1173,21 +1107,18 @@
                 const store = findStoreById(storeId);
                 if (!store) return;
                 const banners = store.banners || [];
-                const container = document.getElementById('bannersList');
-                container.innerHTML = '';
-                banners.forEach(b => {
-                    const div = document.createElement('div');
-                    div.className = 'admin-item';
-                    div.innerHTML = `<span>${b.type === 'text' ? (b.content || 'نص') : (b.images?.length || 0) + ' صورة'} - ترتيب ${b.order}</span>
+                document.getElementById('bannersList').innerHTML = banners.map(b => `
+                    <div class="admin-item">
+                        <span>${b.type === 'text' ? (b.content || 'نص') : (b.images?.length || 0) + ' صورة'} - ترتيب ${b.order}</span>
                         <div>
                             <button class="edit" onclick="editBanner('${storeId}', '${b.id}')">تعديل</button>
                             <button onclick="deleteBanner('${storeId}', '${b.id}')">حذف</button>
-                        </div>`;
-                    container.appendChild(div);
-                });
+                        </div>
+                    </div>
+                `).join('');
             });
 
-            function editBanner(storeId, bannerId) {
+            window.editBanner = function(storeId, bannerId) {
                 const store = findStoreById(storeId);
                 if (!store) return;
                 const banner = (store.banners || []).find(b => b.id === bannerId);
@@ -1202,59 +1133,44 @@
                 if (banner.type === 'images') {
                     document.getElementById('bannerImagesGroup').style.display = 'block';
                     document.getElementById('bannerTextGroup').style.display = 'none';
-                    const images = banner.images || [];
-                    document.getElementById('bannerImage1').value = images[0] || '';
-                    document.getElementById('bannerImage2').value = images[1] || '';
-                    document.getElementById('bannerImage3').value = images[2] || '';
+                    const imgs = banner.images || [];
+                    document.getElementById('bannerImage1').value = imgs[0] || '';
+                    document.getElementById('bannerImage2').value = imgs[1] || '';
+                    document.getElementById('bannerImage3').value = imgs[2] || '';
                 } else {
                     document.getElementById('bannerTextGroup').style.display = 'block';
                     document.getElementById('bannerImagesGroup').style.display = 'none';
                 }
                 document.getElementById('addBannerBtn').style.display = 'none';
                 document.getElementById('updateBannerBtn').style.display = 'block';
-            }
+            };
 
-            function deleteBanner(storeId, bannerId) {
-                if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+            window.deleteBanner = async function(storeId, bannerId) {
+                if (!confirm('حذف الإعلان؟')) return;
                 const store = findStoreById(storeId);
                 if (!store) return;
                 store.banners = (store.banners || []).filter(b => b.id !== bannerId);
                 changedTables.add('stores');
-                saveToSupabaseAdmin(['stores']);
+                await saveToSupabaseAdmin(['stores']);
                 refreshBannerList(storeId);
                 showToast('تم حذف الإعلان', 'success', true);
-            }
+            };
 
             async function addBanner() {
                 const storeId = document.getElementById('bannerStoreSelect').value;
                 if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً');
                 const store = findStoreById(storeId);
                 if (!store) return;
-
                 const type = document.getElementById('bannerType').value;
                 const content = document.getElementById('bannerContent').value;
                 const link = document.getElementById('bannerLink').value;
                 const order = parseInt(document.getElementById('bannerOrder').value) || 0;
                 const active = document.getElementById('bannerActive').checked;
-
                 let images = [];
                 if (type === 'images') {
-                    const img1 = document.getElementById('bannerImage1').value.trim();
-                    const img2 = document.getElementById('bannerImage2').value.trim();
-                    const img3 = document.getElementById('bannerImage3').value.trim();
-                    images = [img1, img2, img3].filter(url => url !== '');
+                    images = [document.getElementById('bannerImage1').value.trim(), document.getElementById('bannerImage2').value.trim(), document.getElementById('bannerImage3').value.trim()].filter(url => url);
                 }
-
-                const newBanner = {
-                    id: generateId(),
-                    type,
-                    content,
-                    images,
-                    link,
-                    order,
-                    active
-                };
-
+                const newBanner = { id: generateId(), type, content, images, link, order, active };
                 if (!store.banners) store.banners = [];
                 store.banners.push(newBanner);
                 changedTables.add('stores');
@@ -1273,22 +1189,16 @@
                 if (!store) return;
                 const banner = (store.banners || []).find(b => b.id === bannerId);
                 if (!banner) return;
-
                 banner.type = document.getElementById('bannerType').value;
                 banner.content = document.getElementById('bannerContent').value;
                 banner.link = document.getElementById('bannerLink').value;
                 banner.order = parseInt(document.getElementById('bannerOrder').value) || 0;
                 banner.active = document.getElementById('bannerActive').checked;
-
                 if (banner.type === 'images') {
-                    const img1 = document.getElementById('bannerImage1').value.trim();
-                    const img2 = document.getElementById('bannerImage2').value.trim();
-                    const img3 = document.getElementById('bannerImage3').value.trim();
-                    banner.images = [img1, img2, img3].filter(url => url !== '');
+                    banner.images = [document.getElementById('bannerImage1').value.trim(), document.getElementById('bannerImage2').value.trim(), document.getElementById('bannerImage3').value.trim()].filter(url => url);
                 } else {
                     banner.images = [];
                 }
-
                 changedTables.add('stores');
                 await saveToSupabaseAdmin(['stores']);
                 refreshBannerList(storeId);
@@ -1307,7 +1217,7 @@
                 document.getElementById('bannerImagesGroup').style.display = isText ? 'none' : 'block';
             });
 
-            // ===== دوال CRUD للفئات والمتاجر والمنتجات =====
+            // ===== دوال CRUD العامة (كاملة) =====
             window.editCategory = function(id) {
                 if (!appData) return;
                 const cat = appData.categories.find(c => c.id === id);
@@ -1330,29 +1240,23 @@
             window.deleteCategory = async function(id) {
                 if (!appData) return;
                 if (!confirm('هل أنت متأكد من حذف هذه الفئة؟ سيتم حذف جميع المتاجر والمنتجات المرتبطة بها.')) return;
-                try {
-                    const catToDelete = appData.categories.find(c => c.id === id);
-                    if (!catToDelete) return;
-                    const catName = catToDelete.name;
-                    // حذف المتاجر والمنتجات
-                    const storesToDelete = appData.stores[catName] || [];
-                    for (const store of storesToDelete) {
-                        delete appData.products[store.id];
-                        await common.supabaseClient.from('stores').delete().eq('id', store.id);
-                    }
-                    delete appData.stores[catName];
-                    appData.categories = appData.categories.filter(c => c.id !== id);
-                    await common.supabaseClient.from('categories').delete().eq('id', id);
-                    changedTables.add('categories');
-                    changedTables.add('stores');
-                    changedTables.add('products');
-                    await saveToSupabaseAdmin(['categories', 'stores', 'products']);
-                    refreshAllLists();
-                    showToast('تم حذف الفئة بنجاح', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error', true);
-                    common.logAdminError(err, 'deleteCategory');
+                const catToDelete = appData.categories.find(c => c.id === id);
+                if (!catToDelete) return;
+                const catName = catToDelete.name;
+                const storesToDelete = appData.stores[catName] || [];
+                for (const store of storesToDelete) {
+                    delete appData.products[store.id];
+                    await common.supabaseClient.from('stores').delete().eq('id', store.id);
                 }
+                delete appData.stores[catName];
+                appData.categories = appData.categories.filter(c => c.id !== id);
+                await common.supabaseClient.from('categories').delete().eq('id', id);
+                changedTables.add('categories');
+                changedTables.add('stores');
+                changedTables.add('products');
+                await saveToSupabaseAdmin(['categories', 'stores', 'products']);
+                refreshAllLists();
+                showToast('تم حذف الفئة بنجاح', 'success', true);
             };
 
             window.editStore = function(storeId) {
@@ -1389,29 +1293,24 @@
             window.deleteStore = async function(storeId) {
                 if (!appData) return;
                 if (!confirm('هل أنت متأكد من حذف هذا المتجر؟ سيتم حذف جميع منتجاته.')) return;
-                try {
-                    let foundCategory = null;
-                    for (let cat in appData.stores) {
-                        const index = appData.stores[cat].findIndex(s => s.id === storeId);
-                        if (index !== -1) {
-                            foundCategory = cat;
-                            appData.stores[cat].splice(index, 1);
-                            break;
-                        }
+                let foundCategory = null;
+                for (let cat in appData.stores) {
+                    const index = appData.stores[cat].findIndex(s => s.id === storeId);
+                    if (index !== -1) {
+                        foundCategory = cat;
+                        appData.stores[cat].splice(index, 1);
+                        break;
                     }
-                    if (!foundCategory) return;
-                    delete appData.products[storeId];
-                    await common.supabaseClient.from('stores').delete().eq('id', storeId);
-                    await common.supabaseClient.from('products').delete().eq('storeId', storeId);
-                    changedTables.add('stores');
-                    changedTables.add('products');
-                    await saveToSupabaseAdmin(['stores', 'products']);
-                    refreshAllLists();
-                    showToast('تم حذف المتجر', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error', true);
-                    common.logAdminError(err, 'deleteStore');
                 }
+                if (!foundCategory) return;
+                delete appData.products[storeId];
+                await common.supabaseClient.from('stores').delete().eq('id', storeId);
+                await common.supabaseClient.from('products').delete().eq('storeId', storeId);
+                changedTables.add('stores');
+                changedTables.add('products');
+                await saveToSupabaseAdmin(['stores', 'products']);
+                refreshAllLists();
+                showToast('تم حذف المتجر', 'success', true);
             };
 
             window.editProduct = function(storeId, productId) {
@@ -1432,30 +1331,113 @@
             window.deleteProduct = async function(storeId, productId) {
                 if (!appData) return;
                 if (!confirm('هل أنت متأكد من حذف هذا المنتج؟')) return;
-                try {
-                    const index = appData.products[storeId].findIndex(p => p.id === productId);
-                    if (index === -1) return;
-                    appData.products[storeId].splice(index, 1);
-                    await common.supabaseClient.from('products').delete().eq('storeId', storeId).eq('id', productId);
-                    changedTables.add('products');
-                    await saveToSupabaseAdmin(['products']);
-                    refreshAllLists();
-                    showToast('تم حذف المنتج', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error', true);
-                    common.logAdminError(err, 'deleteProduct');
-                }
+                const index = appData.products[storeId].findIndex(p => p.id === productId);
+                if (index === -1) return;
+                appData.products[storeId].splice(index, 1);
+                await common.supabaseClient.from('products').delete().eq('storeId', storeId).eq('id', productId);
+                changedTables.add('products');
+                await saveToSupabaseAdmin(['products']);
+                refreshAllLists();
+                showToast('تم حذف المنتج', 'success', true);
             };
 
-            // ===== أحداث أزرار الإضافة والتحديث =====
+            window.editCarousel = function(id) {
+                if (!appData) return;
+                const ad = appData.carousel.find(a => a.id === id);
+                if (!ad) return;
+                currentEditCarouselId = id;
+                document.getElementById('carouselName').value = ad.name;
+                document.getElementById('carouselLink').value = ad.link;
+                document.getElementById('carouselImage').value = ad.image;
+                document.getElementById('carouselOrder').value = ad.order;
+                document.getElementById('carouselActive').checked = ad.active;
+                document.getElementById('addCarouselBtn').style.display = 'none';
+                document.getElementById('updateCarouselBtn').style.display = 'block';
+            };
+
+            window.deleteCarousel = async function(id) {
+                if (!appData) return;
+                if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
+                appData.carousel = appData.carousel.filter(ad => ad.id !== id);
+                await common.supabaseClient.from('carousel').delete().eq('id', id);
+                changedTables.add('carousel');
+                await saveToSupabaseAdmin(['carousel']);
+                refreshAllLists();
+                showToast('تم حذف الإعلان', 'success', true);
+            };
+
+            window.editTestimonial = function(id) {
+                if (!appData) return;
+                const t = appData.testimonials.find(t => t.id === id);
+                if (!t) return;
+                currentEditTestimonialId = id;
+                document.getElementById('testimonialName').value = t.name;
+                document.getElementById('testimonialImage').value = t.image;
+                document.getElementById('testimonialRating').value = t.rating;
+                document.getElementById('testimonialReview').value = t.review;
+                document.getElementById('addTestimonialBtn').style.display = 'none';
+                document.getElementById('updateTestimonialBtn').style.display = 'block';
+            };
+
+            window.deleteTestimonial = async function(id) {
+                if (!appData) return;
+                if (!confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
+                appData.testimonials = appData.testimonials.filter(t => t.id !== id);
+                await common.supabaseClient.from('testimonials').delete().eq('id', id);
+                changedTables.add('testimonials');
+                await saveToSupabaseAdmin(['testimonials']);
+                refreshAllLists();
+                showToast('تم حذف التقييم', 'success', true);
+            };
+
+            window.editContest = function(index) {
+                if (!appData || !appData.settings.contests) return;
+                const contest = appData.settings.contests[index];
+                if (!contest) return;
+                document.getElementById('editContestId').value = index;
+                document.getElementById('contestName').value = contest.name;
+                document.getElementById('contestDescription').value = contest.description;
+                document.getElementById('contestEndDate').value = contest.endDate;
+                document.getElementById('addContestBtn').style.display = 'none';
+                document.getElementById('updateContestBtn').style.display = 'block';
+            };
+
+            window.deleteContest = async function(index) {
+                if (!appData || !appData.settings.contests) return;
+                if (!confirm('هل أنت متأكد من حذف هذه المسابقة؟')) return;
+                appData.settings.contests.splice(index, 1);
+                changedTables.add('settings');
+                await saveToSupabaseAdmin(['settings']);
+                refreshAllLists();
+                showToast('تم حذف المسابقة', 'success', true);
+            };
+
+            window.deleteTrustBadge = async function(index) {
+                if (!appData || !appData.settings.trustBadges) return;
+                if (!confirm('هل أنت متأكد من حذف هذه الشارة؟')) return;
+                appData.settings.trustBadges.splice(index, 1);
+                changedTables.add('settings');
+                await saveToSupabaseAdmin(['settings']);
+                refreshAllLists();
+                showToast('تم حذف الشارة', 'success', true);
+            };
+
+            window.deleteMessage = async function(index) {
+                if (!appData || !appData.messages) return;
+                if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
+                appData.messages.splice(index, 1);
+                changedTables.add('messages');
+                await saveToSupabaseAdmin(['messages']);
+                refreshAllLists();
+                showToast('تم حذف الرسالة', 'success', true);
+            };
+
+            // ===== ربط أحداث الإضافة والتحديث (الأزرار) =====
             document.getElementById('addCategoryBtn').addEventListener('click', async () => {
                 const name = document.getElementById('categoryName').value.trim();
                 if (!name) return alert('اسم الفئة مطلوب');
                 const slug = document.getElementById('categorySlug').value.trim() || name.replace(/\s/g, '-').toLowerCase();
-                if (appData.categories.some(c => c.slug === slug)) {
-                    alert('هذا الـ slug موجود مسبقاً');
-                    return;
-                }
+                if (appData.categories.some(c => c.slug === slug)) { alert('هذا الـ slug موجود مسبقاً'); return; }
                 const newCat = {
                     id: generateId(),
                     name: name,
@@ -1469,18 +1451,13 @@
                     adText: document.getElementById('categoryAdText').value || '',
                     adEnabled: document.getElementById('categoryAdEnabled').checked
                 };
-                try {
-                    appData.categories.push(newCat);
-                    if (!appData.stores[newCat.name]) appData.stores[newCat.name] = [];
-                    changedTables.add('categories');
-                    await saveToSupabaseAdmin(['categories']);
-                    refreshAllLists();
-                    resetFormFields('categoryForm');
-                    showToast('تم إضافة الفئة', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الإضافة: " + err.message, 'error', true);
-                    common.logAdminError(err, 'addCategory');
-                }
+                appData.categories.push(newCat);
+                if (!appData.stores[newCat.name]) appData.stores[newCat.name] = [];
+                changedTables.add('categories');
+                await saveToSupabaseAdmin(['categories']);
+                refreshAllLists();
+                resetFormFields('categoryForm');
+                showToast('تم إضافة الفئة', 'success', true);
             });
 
             document.getElementById('updateCategoryBtn').addEventListener('click', async () => {
@@ -1501,21 +1478,16 @@
                     adText: document.getElementById('categoryAdText').value || '',
                     adEnabled: document.getElementById('categoryAdEnabled').checked
                 };
-                try {
-                    appData.categories[catIndex] = updatedCat;
-                    if (oldName !== updatedCat.name && appData.stores[oldName]) {
-                        appData.stores[updatedCat.name] = appData.stores[oldName];
-                        delete appData.stores[oldName];
-                    }
-                    changedTables.add('categories');
-                    await saveToSupabaseAdmin(['categories']);
-                    refreshAllLists();
-                    resetFormFields('categoryForm');
-                    showToast('تم تحديث الفئة', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في التحديث: " + err.message, 'error', true);
-                    common.logAdminError(err, 'updateCategory');
+                appData.categories[catIndex] = updatedCat;
+                if (oldName !== updatedCat.name && appData.stores[oldName]) {
+                    appData.stores[updatedCat.name] = appData.stores[oldName];
+                    delete appData.stores[oldName];
                 }
+                changedTables.add('categories');
+                await saveToSupabaseAdmin(['categories']);
+                refreshAllLists();
+                resetFormFields('categoryForm');
+                showToast('تم تحديث الفئة', 'success', true);
             });
 
             document.getElementById('addStoreBtn').addEventListener('click', async () => {
@@ -1540,28 +1512,22 @@
                     productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value) || 10,
                     numStrips: parseInt(document.getElementById('storeNumStrips').value) || 10
                 };
-                try {
-                    if (!appData.stores[category]) appData.stores[category] = [];
-                    appData.stores[category].push(newStore);
-                    appData.products[newStore.id] = [];
-                    changedTables.add('stores');
-                    changedTables.add('products');
-                    await saveToSupabaseAdmin(['stores', 'products']);
-                    refreshAllLists();
-                    resetFormFields('storeForm');
-                    showToast('تم إضافة المتجر', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في إضافة المتجر: " + err.message, 'error', true);
-                    common.logAdminError(err, 'addStore');
-                }
+                if (!appData.stores[category]) appData.stores[category] = [];
+                appData.stores[category].push(newStore);
+                appData.products[newStore.id] = [];
+                changedTables.add('stores');
+                changedTables.add('products');
+                await saveToSupabaseAdmin(['stores', 'products']);
+                refreshAllLists();
+                resetFormFields('storeForm');
+                showToast('تم إضافة المتجر', 'success', true);
             });
 
             document.getElementById('updateStoreBtn').addEventListener('click', async () => {
                 if (!currentEditStoreId) return;
                 const store = findStoreById(currentEditStoreId);
                 if (!store) return;
-                const updatedStore = {
-                    ...store,
+                Object.assign(store, {
                     name: document.getElementById('storeName').value.trim(),
                     logo: document.getElementById('storeLogo').value,
                     externalUrl: document.getElementById('storeExternalUrl').value,
@@ -1572,19 +1538,13 @@
                     productDisplayMode: document.getElementById('storeProductDisplayMode').value,
                     productDisplayCount: parseInt(document.getElementById('storeProductDisplayCount').value) || 10,
                     numStrips: parseInt(document.getElementById('storeNumStrips').value) || 10
-                };
-                try {
-                    Object.assign(store, updatedStore);
-                    changedTables.add('stores');
-                    await saveToSupabaseAdmin(['stores']);
-                    refreshAllLists();
-                    resetFormFields('storeForm');
-                    currentEditStoreId = null;
-                    showToast('تم تحديث المتجر', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في التحديث: " + err.message, 'error', true);
-                    common.logAdminError(err, 'updateStore');
-                }
+                });
+                changedTables.add('stores');
+                await saveToSupabaseAdmin(['stores']);
+                refreshAllLists();
+                resetFormFields('storeForm');
+                currentEditStoreId = null;
+                showToast('تم تحديث المتجر', 'success', true);
             });
 
             document.getElementById('addProductBtn').addEventListener('click', async () => {
@@ -1601,48 +1561,35 @@
                     image: document.getElementById('productImage').value || 'https://via.placeholder.com/300',
                     link: document.getElementById('productLink').value || '#'
                 };
-                try {
-                    if (!appData.products[storeId]) appData.products[storeId] = [];
-                    appData.products[storeId].push(newProduct);
-                    changedTables.add('products');
-                    await saveToSupabaseAdmin(['products']);
-                    refreshAllLists();
-                    resetFormFields('productForm');
-                    showToast('تم إضافة المنتج', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في إضافة المنتج: " + err.message, 'error', true);
-                    common.logAdminError(err, 'addProduct');
-                }
+                if (!appData.products[storeId]) appData.products[storeId] = [];
+                appData.products[storeId].push(newProduct);
+                changedTables.add('products');
+                await saveToSupabaseAdmin(['products']);
+                refreshAllLists();
+                resetFormFields('productForm');
+                showToast('تم إضافة المنتج', 'success', true);
             });
 
             document.getElementById('updateProductBtn').addEventListener('click', async () => {
                 if (!currentEditProductStoreId || !currentEditProductId) return;
                 const product = appData.products[currentEditProductStoreId].find(p => p.id === currentEditProductId);
                 if (!product) return;
-                const updatedProduct = {
-                    ...product,
+                Object.assign(product, {
                     name: document.getElementById('productName').value.trim(),
                     oldPrice: parseFloat(document.getElementById('productOldPrice').value) || 0,
                     newPrice: parseFloat(document.getElementById('productNewPrice').value) || 0,
                     image: document.getElementById('productImage').value,
                     link: document.getElementById('productLink').value
-                };
-                try {
-                    Object.assign(product, updatedProduct);
-                    changedTables.add('products');
-                    await saveToSupabaseAdmin(['products']);
-                    refreshAllLists();
-                    resetFormFields('productForm');
-                    currentEditProductStoreId = null;
-                    currentEditProductId = null;
-                    showToast('تم تحديث المنتج', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في التحديث: " + err.message, 'error', true);
-                    common.logAdminError(err, 'updateProduct');
-                }
+                });
+                changedTables.add('products');
+                await saveToSupabaseAdmin(['products']);
+                refreshAllLists();
+                resetFormFields('productForm');
+                currentEditProductStoreId = null;
+                currentEditProductId = null;
+                showToast('تم تحديث المنتج', 'success', true);
             });
 
-            // ===== الإعلانات الدوارة =====
             document.getElementById('addCarouselBtn').addEventListener('click', async () => {
                 const name = document.getElementById('carouselName').value.trim();
                 if (!name) return alert('اسم الإعلان مطلوب');
@@ -1654,25 +1601,20 @@
                     order: parseInt(document.getElementById('carouselOrder').value) || 0,
                     active: document.getElementById('carouselActive').checked
                 };
-                try {
-                    if (!appData.carousel) appData.carousel = [];
-                    appData.carousel.push(newAd);
-                    changedTables.add('carousel');
-                    await saveToSupabaseAdmin(['carousel']);
-                    refreshAllLists();
-                    resetFormFields('carouselForm');
-                    showToast('تم إضافة الإعلان', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الإضافة: " + err.message, 'error', true);
-                    common.logAdminError(err, 'addCarousel');
-                }
+                if (!appData.carousel) appData.carousel = [];
+                appData.carousel.push(newAd);
+                changedTables.add('carousel');
+                await saveToSupabaseAdmin(['carousel']);
+                refreshAllLists();
+                resetFormFields('carouselForm');
+                showToast('تم إضافة الإعلان', 'success', true);
             });
 
             document.getElementById('updateCarouselBtn').addEventListener('click', async () => {
                 if (!currentEditCarouselId) return;
                 const index = appData.carousel.findIndex(a => a.id === currentEditCarouselId);
                 if (index === -1) return;
-                const updatedAd = {
+                appData.carousel[index] = {
                     ...appData.carousel[index],
                     name: document.getElementById('carouselName').value.trim(),
                     link: document.getElementById('carouselLink').value || '#',
@@ -1680,51 +1622,14 @@
                     order: parseInt(document.getElementById('carouselOrder').value) || 0,
                     active: document.getElementById('carouselActive').checked
                 };
-                try {
-                    appData.carousel[index] = updatedAd;
-                    changedTables.add('carousel');
-                    await saveToSupabaseAdmin(['carousel']);
-                    refreshAllLists();
-                    resetFormFields('carouselForm');
-                    currentEditCarouselId = null;
-                    showToast('تم تحديث الإعلان', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في التحديث: " + err.message, 'error', true);
-                    common.logAdminError(err, 'updateCarousel');
-                }
+                changedTables.add('carousel');
+                await saveToSupabaseAdmin(['carousel']);
+                refreshAllLists();
+                resetFormFields('carouselForm');
+                currentEditCarouselId = null;
+                showToast('تم تحديث الإعلان', 'success', true);
             });
 
-            window.editCarousel = function(id) {
-                if (!appData) return;
-                const ad = appData.carousel.find(a => a.id === id);
-                if (!ad) return;
-                currentEditCarouselId = id;
-                document.getElementById('carouselName').value = ad.name;
-                document.getElementById('carouselLink').value = ad.link;
-                document.getElementById('carouselImage').value = ad.image;
-                document.getElementById('carouselOrder').value = ad.order;
-                document.getElementById('carouselActive').checked = ad.active;
-                document.getElementById('addCarouselBtn').style.display = 'none';
-                document.getElementById('updateCarouselBtn').style.display = 'block';
-            };
-
-            window.deleteCarousel = async function(id) {
-                if (!appData) return;
-                if (!confirm('هل أنت متأكد من حذف هذا الإعلان؟')) return;
-                try {
-                    appData.carousel = appData.carousel.filter(ad => ad.id !== id);
-                    await common.supabaseClient.from('carousel').delete().eq('id', id);
-                    changedTables.add('carousel');
-                    await saveToSupabaseAdmin(['carousel']);
-                    refreshAllLists();
-                    showToast('تم حذف الإعلان', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error', true);
-                    common.logAdminError(err, 'deleteCarousel');
-                }
-            };
-
-            // ===== التقييمات =====
             document.getElementById('addTestimonialBtn').addEventListener('click', async () => {
                 const name = document.getElementById('testimonialName').value.trim();
                 if (!name) return alert('الاسم مطلوب');
@@ -1735,74 +1640,33 @@
                     rating: parseInt(document.getElementById('testimonialRating').value) || 5,
                     review: document.getElementById('testimonialReview').value || ''
                 };
-                try {
-                    appData.testimonials.push(newTestimonial);
-                    changedTables.add('testimonials');
-                    await saveToSupabaseAdmin(['testimonials']);
-                    refreshAllLists();
-                    resetFormFields('testimonialForm');
-                    showToast('تم إضافة التقييم', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الإضافة: " + err.message, 'error', true);
-                    common.logAdminError(err, 'addTestimonial');
-                }
+                appData.testimonials.push(newTestimonial);
+                changedTables.add('testimonials');
+                await saveToSupabaseAdmin(['testimonials']);
+                refreshAllLists();
+                resetFormFields('testimonialForm');
+                showToast('تم إضافة التقييم', 'success', true);
             });
 
             document.getElementById('updateTestimonialBtn').addEventListener('click', async () => {
                 if (!currentEditTestimonialId) return;
                 const index = appData.testimonials.findIndex(t => t.id === currentEditTestimonialId);
                 if (index === -1) return;
-                const updatedTestimonial = {
+                appData.testimonials[index] = {
                     ...appData.testimonials[index],
                     name: document.getElementById('testimonialName').value.trim(),
                     image: document.getElementById('testimonialImage').value || 'https://via.placeholder.com/100',
                     rating: parseInt(document.getElementById('testimonialRating').value) || 5,
                     review: document.getElementById('testimonialReview').value || ''
                 };
-                try {
-                    appData.testimonials[index] = updatedTestimonial;
-                    changedTables.add('testimonials');
-                    await saveToSupabaseAdmin(['testimonials']);
-                    refreshAllLists();
-                    resetFormFields('testimonialForm');
-                    currentEditTestimonialId = null;
-                    showToast('تم تحديث التقييم', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في التحديث: " + err.message, 'error', true);
-                    common.logAdminError(err, 'updateTestimonial');
-                }
+                changedTables.add('testimonials');
+                await saveToSupabaseAdmin(['testimonials']);
+                refreshAllLists();
+                resetFormFields('testimonialForm');
+                currentEditTestimonialId = null;
+                showToast('تم تحديث التقييم', 'success', true);
             });
 
-            window.editTestimonial = function(id) {
-                if (!appData) return;
-                const t = appData.testimonials.find(t => t.id === id);
-                if (!t) return;
-                currentEditTestimonialId = id;
-                document.getElementById('testimonialName').value = t.name;
-                document.getElementById('testimonialImage').value = t.image;
-                document.getElementById('testimonialRating').value = t.rating;
-                document.getElementById('testimonialReview').value = t.review;
-                document.getElementById('addTestimonialBtn').style.display = 'none';
-                document.getElementById('updateTestimonialBtn').style.display = 'block';
-            };
-
-            window.deleteTestimonial = async function(id) {
-                if (!appData) return;
-                if (!confirm('هل أنت متأكد من حذف هذا التقييم؟')) return;
-                try {
-                    appData.testimonials = appData.testimonials.filter(t => t.id !== id);
-                    await common.supabaseClient.from('testimonials').delete().eq('id', id);
-                    changedTables.add('testimonials');
-                    await saveToSupabaseAdmin(['testimonials']);
-                    refreshAllLists();
-                    showToast('تم حذف التقييم', 'success', true);
-                } catch (err) {
-                    showToast("خطأ في الحذف: " + err.message, 'error', true);
-                    common.logAdminError(err, 'deleteTestimonial');
-                }
-            };
-
-            // ===== المسابقات =====
             document.getElementById('addContestBtn').addEventListener('click', async () => {
                 const name = document.getElementById('contestName').value.trim();
                 if (!name) return alert('اسم المسابقة مطلوب');
@@ -1835,29 +1699,6 @@
                 showToast('تم تحديث المسابقة', 'success', true);
             });
 
-            window.editContest = function(index) {
-                if (!appData || !appData.settings.contests) return;
-                const contest = appData.settings.contests[index];
-                if (!contest) return;
-                document.getElementById('editContestId').value = index;
-                document.getElementById('contestName').value = contest.name;
-                document.getElementById('contestDescription').value = contest.description;
-                document.getElementById('contestEndDate').value = contest.endDate;
-                document.getElementById('addContestBtn').style.display = 'none';
-                document.getElementById('updateContestBtn').style.display = 'block';
-            };
-
-            window.deleteContest = async function(index) {
-                if (!appData || !appData.settings.contests) return;
-                if (!confirm('هل أنت متأكد من حذف هذه المسابقة؟')) return;
-                appData.settings.contests.splice(index, 1);
-                changedTables.add('settings');
-                await saveToSupabaseAdmin(['settings']);
-                refreshAllLists();
-                showToast('تم حذف المسابقة', 'success', true);
-            };
-
-            // ===== شارات الثقة =====
             document.getElementById('saveTrustBadges').addEventListener('click', async () => {
                 const badges = document.getElementById('trustBadgesInput').value.split('\n').filter(b => b.trim());
                 appData.settings.trustBadges = badges;
@@ -1867,17 +1708,6 @@
                 showToast('تم حفظ شارات الثقة', 'success', true);
             });
 
-            window.deleteTrustBadge = async function(index) {
-                if (!appData || !appData.settings.trustBadges) return;
-                if (!confirm('هل أنت متأكد من حذف هذه الشارة؟')) return;
-                appData.settings.trustBadges.splice(index, 1);
-                changedTables.add('settings');
-                await saveToSupabaseAdmin(['settings']);
-                refreshAllLists();
-                showToast('تم حذف الشارة', 'success', true);
-            };
-
-            // ===== الإعدادات العامة =====
             document.getElementById('saveGeneralSettings').addEventListener('click', async () => {
                 appData.settings.currency = document.getElementById('currencySelect').value;
                 appData.settings.language = document.getElementById('languageSelect').value;
@@ -1897,7 +1727,6 @@
                 showToast('تم حفظ الإعدادات العامة', 'success', true);
             });
 
-            // ===== إعدادات التصميم =====
             document.getElementById('saveDesignSettings').addEventListener('click', async () => {
                 appData.design = {
                     categoryBg: document.getElementById('categoryBg').value,
@@ -1919,7 +1748,6 @@
                 showToast('تم حفظ إعدادات التصميم', 'success', true);
             });
 
-            // ===== الترويسة =====
             document.getElementById('saveHeaderBtn').addEventListener('click', async () => {
                 appData.header.title = document.getElementById('headerTitleInput').value;
                 appData.header.subtitle = document.getElementById('headerSubtitleInput').value;
@@ -1930,7 +1758,6 @@
                 showToast('تم حفظ إعدادات الترويسة', 'success', true);
             });
 
-            // ===== شريط الإعلانات النصي =====
             document.getElementById('saveTickerBtn').addEventListener('click', async () => {
                 const tickerTexts = document.getElementById('tickerTextsInput').value.split('\n').filter(t => t.trim());
                 appData.ticker = tickerTexts;
@@ -1939,18 +1766,16 @@
                 showToast('تم حفظ شريط الإعلانات', 'success', true);
             });
 
-            // ===== التذييل =====
             document.getElementById('saveFooterBtn').addEventListener('click', async () => {
                 appData.footer.email = document.getElementById('footerEmail').value;
                 appData.footer.phone = document.getElementById('footerPhone').value;
                 appData.footer.whatsapp = document.getElementById('footerWhatsapp').value;
-                const platforms = ['whatsapp', 'facebook', 'twitter', 'instagram', 'telegram', 'snapchat', 'linkedin', 'tiktok'];
-                const socialMedia = platforms.map(p => ({
+                const platforms = ['whatsapp','facebook','twitter','instagram','telegram','snapchat','linkedin','tiktok'];
+                appData.footer.socialMedia = platforms.map(p => ({
                     platform: p,
                     url: document.getElementById(`social_${p}_url`).value.trim(),
                     active: document.getElementById(`social_${p}_active`).checked
                 }));
-                appData.footer.socialMedia = socialMedia;
                 const paymentsText = document.getElementById('footerPayments').value;
                 appData.footer.payments = paymentsText.split(',').map(p => p.trim()).filter(p => p);
                 changedTables.add('settings');
@@ -1958,7 +1783,6 @@
                 showToast('تم حفظ التذييل', 'success', true);
             });
 
-            // ===== أذونات المتاجر =====
             document.getElementById('saveStorePermissions').addEventListener('click', async () => {
                 const storeId = document.getElementById('storePermissionStoreSelect').value;
                 if (!storeId || storeId === 'اختر المتجر') return alert('اختر متجراً أولاً');
@@ -1972,7 +1796,6 @@
                 }
             });
 
-            // ===== سياسة السوق =====
             document.getElementById('saveMarketPolicy').addEventListener('click', async () => {
                 appData.settings.marketPolicy = {
                     terms: document.getElementById('policyTerms').value,
@@ -1984,7 +1807,6 @@
                 showToast('تم حفظ سياسة السوق', 'success', true);
             });
 
-            // ===== من نحن =====
             document.getElementById('saveAboutUs').addEventListener('click', async () => {
                 appData.settings.aboutUs = {
                     description: document.getElementById('aboutDescription').value,
@@ -1996,18 +1818,16 @@
                 showToast('تم حفظ معلومات من نحن', 'success', true);
             });
 
-            // ===== رسائل الاتصال =====
-            window.deleteMessage = async function(index) {
-                if (!appData || !appData.messages) return;
-                if (!confirm('هل أنت متأكد من حذف هذه الرسالة؟')) return;
-                appData.messages.splice(index, 1);
-                changedTables.add('messages');
-                await saveToSupabaseAdmin(['messages']);
-                refreshAllLists();
-                showToast('تم حذف الرسالة', 'success', true);
-            };
+            document.getElementById('resetVisitorBtn').addEventListener('click', () => {
+                localStorage.setItem('visitorCount', 0);
+                if (appData) {
+                    appData.settings.visitorCount = 0;
+                    saveToSupabaseAdmin(['settings']);
+                }
+                document.getElementById('visitorCount').textContent = 0;
+                showToast('✅ تم إعادة تعيين العداد', 'success', true);
+            });
 
-            // ===== نشر التحديثات =====
             document.getElementById('publishBtn').addEventListener('click', async () => {
                 const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
                 changedTables.clear();
@@ -2026,18 +1846,21 @@
                 window.open('index.html?preview=' + Date.now(), '_blank');
             });
 
-            // ===== عداد الزوار =====
-            document.getElementById('resetVisitorBtn').addEventListener('click', () => {
-                localStorage.setItem('visitorCount', 0);
-                if (appData) {
-                    appData.settings.visitorCount = 0;
-                    saveToSupabaseAdmin(['settings']);
-                }
-                document.getElementById('visitorCount').textContent = 0;
-                showToast('✅ تم إعادة تعيين العداد', 'success', true);
+            document.getElementById('forceSaveBtn').addEventListener('click', async () => {
+                const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
+                changedTables.clear();
+                allTables.forEach(t => changedTables.add(t));
+                await saveToSupabaseAdmin(allTables);
+                showToast('✅ تم حفظ ومزامنة جميع البيانات', 'success', true);
             });
 
-            // ===== استيراد / تصدير =====
+            document.getElementById('clearAdminErrors').addEventListener('click', () => {
+                window.adminErrors = [];
+                renderAdminErrors();
+                showToast('تم مسح سجل الأخطاء', 'success', true);
+            });
+
+            // ===== استيراد/تصدير =====
             document.getElementById('exportJsonBtn').addEventListener('click', () => {
                 const dataStr = JSON.stringify(appData, null, 2);
                 const blob = new Blob([dataStr], { type: "application/json" });
@@ -2070,8 +1893,9 @@
                         await common.supabaseClient.from('carousel').delete().neq('id', '');
                         await common.supabaseClient.from('messages').delete().neq('id', '');
                         changedTables.clear();
-                        ['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages'].forEach(t => changedTables.add(t));
-                        await saveToSupabaseAdmin(['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages']);
+                        const allTables = ['settings', 'categories', 'stores', 'products', 'testimonials', 'carousel', 'messages'];
+                        allTables.forEach(t => changedTables.add(t));
+                        await saveToSupabaseAdmin(allTables);
                         refreshAllLists();
                         document.getElementById('visitorCount').textContent = appData.settings.visitorCount || 0;
                         showToast('✅ تم استيراد البيانات بنجاح', 'success', true);
@@ -2083,16 +1907,7 @@
                 reader.readAsText(file);
             });
 
-            // ===== حفظ فوري ومزامنة =====
-            document.getElementById('forceSaveBtn').addEventListener('click', async () => {
-                const allTables = ['categories', 'stores', 'products', 'testimonials', 'carousel', 'messages', 'settings'];
-                changedTables.clear();
-                allTables.forEach(t => changedTables.add(t));
-                await saveToSupabaseAdmin(allTables);
-                showToast('✅ تم حفظ ومزامنة جميع البيانات', 'success', true);
-            });
-
-            // ===== إعدادات رفع الصور =====
+            // ===== رفع الصور =====
             setupImageUpload('categoryFeaturedImageFile', 'categoryFeaturedImage', 'categories');
             setupImageUpload('categoryIndexImageFile', 'categoryIndexImage', 'categories');
             setupImageUpload('storeLogoFile', 'storeLogo', 'stores');
@@ -2103,7 +1918,6 @@
             setupImageUpload('bannerImageFile2', 'bannerImage2', 'banners');
             setupImageUpload('bannerImageFile3', 'bannerImage3', 'banners');
 
-            // ===== رفع صور الهيدر =====
             document.getElementById('headerImagesFile').addEventListener('change', async (e) => {
                 const files = e.target.files;
                 if (!files || files.length === 0) return;
@@ -2127,12 +1941,12 @@
                 e.target.value = '';
             });
 
-            // ===== أحداث التغيير للقوائم المنسدلة =====
+            // ===== أحداث القوائم المنسدلة =====
             document.getElementById('storeCategorySelect').addEventListener('change', (e) => populateStoresList(e.target.value));
             document.getElementById('productCategorySelect').addEventListener('change', (e) => {
                 const cat = e.target.value;
                 const storeSelect = document.getElementById('productStoreSelect');
-                if (storeSelect && appData && appData.stores[cat]) {
+                if (storeSelect && appData?.stores[cat]) {
                     storeSelect.innerHTML = '<option>اختر المتجر</option>';
                     appData.stores[cat].forEach(store => {
                         storeSelect.innerHTML += `<option value="${store.id}">${store.name}</option>`;
@@ -2151,29 +1965,15 @@
                     sessionStorage.setItem('adminLoggedIn', 'true');
                     try {
                         renderSocialFields();
-                        setupSaudiFlagUpload();
-
-                        const cachedData = await common.loadFromIndexedDB();
-                        if (cachedData) {
-                            appData = cachedData;
-                            refreshAllLists();
-                            document.getElementById('visitorCount').textContent = appData.settings?.visitorCount || 0;
-                            updateConnectionStatus();
-                        }
-
                         appData = await common.loadAppData();
-                        if (!cachedData) refreshAllLists();
+                        setupSaudiFlagUpload();
+                        refreshAllLists();
                         document.getElementById('visitorCount').textContent = appData.settings?.visitorCount || 0;
                         updateConnectionStatus();
-
                         window.broadcastChannel = new BroadcastChannel('markets_channel');
                         window.broadcastChannel.onmessage = (event) => {
                             if (event.data.type === 'DB_UPDATE') {
-                                common.loadAppData().then(data => {
-                                    appData = data;
-                                    refreshAllLists();
-                                    showToast('تم تحديث البيانات من جهة أخرى', 'success', true);
-                                });
+                                common.loadAppData().then(data => { appData = data; refreshAllLists(); showToast('تم تحديث البيانات من جهة أخرى', 'success', true); });
                             }
                         };
                         setInterval(() => { if (changedTables.size > 0) saveToSupabaseAdmin(); }, 30000);
@@ -2186,27 +1986,11 @@
                 } else alert('الرمز غير صحيح');
             };
 
-            document.getElementById('secretCodeInput').addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') checkLogin();
-            });
-
+            document.getElementById('secretCodeInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkLogin(); });
             if (sessionStorage.getItem('adminLoggedIn') === 'true') checkLogin();
 
-            window.addEventListener('online', () => {
-                updateConnectionStatus();
-                showToast('🔄 تم استعادة الاتصال، جاري المزامنة...', 'success', true);
-                if (appData) saveToSupabaseAdmin();
-            });
-            window.addEventListener('offline', () => {
-                updateConnectionStatus();
-                showToast('⚠️ أنت غير متصل، سيتم حفظ البيانات محلياً', 'error', true);
-            });
-
-            document.getElementById('clearAdminErrors').addEventListener('click', () => {
-                window.adminErrors = [];
-                renderAdminErrors();
-                showToast('تم مسح سجل الأخطاء', 'success', true);
-            });
+            window.addEventListener('online', () => { updateConnectionStatus(); showToast('🔄 تم استعادة الاتصال، جاري المزامنة...', 'success', true); if (appData) saveToSupabaseAdmin(); });
+            window.addEventListener('offline', () => { updateConnectionStatus(); showToast('⚠️ أنت غير متصل، سيتم حفظ البيانات محلياً', 'error', true); });
         }
     </script>
 </body>
